@@ -34,6 +34,8 @@ static void program_rain_init_drop(struct raindrop_t *const r) {
 
 static void program_rain_init(struct ssd1306_t *const display,
                               struct framebuffer_t *const framebuffer) {
+  ssd1306_set_invert_off(display);
+
   rain_thunder = RAIN_THUNDER_IDLE;
   rain_title_time = 30;
   for (uint8_t i = 0; i < RAIN_DROP_COUNT; ++i) {

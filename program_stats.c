@@ -9,7 +9,9 @@
 #include <stdint.h>
 
 static void program_stats_init(struct ssd1306_t *const display,
-                               struct framebuffer_t *const framebuffer) {}
+                               struct framebuffer_t *const framebuffer) {
+  ssd1306_set_invert_off(display);
+}
 
 extern const void *_etext;
 extern const void *__bss_end;
