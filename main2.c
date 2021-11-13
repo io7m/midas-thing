@@ -71,7 +71,7 @@ int main(void) {
   framebuffer_init(&framebuffer);
 
   PANIC_ON_FAILURE(ssd1306_display_off(&ssd1306));
-  PANIC_ON_FAILURE(ssd1306_set_clock_divider(&ssd1306, 0x80));
+  PANIC_ON_FAILURE(ssd1306_set_clock_divider(&ssd1306, 0b00000000));
   PANIC_ON_FAILURE(ssd1306_set_multiplex_ratio(&ssd1306, 63));
   PANIC_ON_FAILURE(ssd1306_set_display_offset(&ssd1306, 0x00));
   PANIC_ON_FAILURE(ssd1306_set_display_start_line(&ssd1306, 0x00));
