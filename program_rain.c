@@ -18,7 +18,7 @@ typedef enum {
   RAIN_THUNDER_FLASH2
 } rain_thunder_state_t;
 
-#define RAIN_DROP_COUNT 16
+#define RAIN_DROP_COUNT 8
 #define RAIN_SPEED_MINIMUM 7
 #define RAIN_SPEED_MAXIMUM 10
 
@@ -43,23 +43,22 @@ static void program_rain_init(struct ssd1306_t *const display,
   }
 }
 
-struct framebuffer_blit_t rain_thunder_blit = {.blit_width = 8,
-                                               .blit_height = 16,
-                                               .source = rom,
-                                               .source_flash = 1,
-                                               .source_image_width = ROM_WIDTH,
-                                               .source_image_height =
-                                                   ROM_HEIGHT,
-                                               .source_x = 32,
-                                               .source_y = 112,
-                                               .target_x = 32,
-                                               .target_y = 24
-
-};
-
 static void
 program_rain_render_thunder(struct ssd1306_t *const display,
                             struct framebuffer_t *const framebuffer) {
+
+  struct framebuffer_blit_t rain_thunder_blit;
+  rain_thunder_blit.blit_width = 8;
+  rain_thunder_blit.blit_height = 16;
+  rain_thunder_blit.source = rom;
+  rain_thunder_blit.source_flash = 1;
+  rain_thunder_blit.source_image_width = ROM_WIDTH;
+  rain_thunder_blit.source_image_height = ROM_HEIGHT;
+  rain_thunder_blit.source_x = 32;
+  rain_thunder_blit.source_y = 112;
+  rain_thunder_blit.target_x = 32;
+  rain_thunder_blit.target_y = 24;
+
   switch (rain_thunder) {
   case RAIN_THUNDER_IDLE: {
     if (rom_random_8() < 3) {

@@ -23,7 +23,8 @@
 static struct ssd1306_t ssd1306;
 static struct framebuffer_t framebuffer;
 
-static const struct program_t *programs[] = {&program_rain, &program_stats};
+static const struct program_t *const programs[] = {&program_rain,
+                                                   &program_stats};
 static const uint8_t program_count =
     sizeof(programs) / sizeof(struct program_t *);
 

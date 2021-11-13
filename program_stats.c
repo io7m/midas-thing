@@ -36,13 +36,20 @@ static void program_stats_run(struct ssd1306_t *const display,
   framebuffer_render_text_P(framebuffer, PSTR("TEXT "), 8, 8);
   framebuffer_render_text_P(framebuffer, PSTR("DATA "), 8, 16);
   framebuffer_render_text_P(framebuffer, PSTR("VERS "), 8, 24);
+  framebuffer_render_text_P(framebuffer, PSTR("RNG  "), 8, 32);
 
   char buffer[FORMAT_U32_SIZE_BASE2];
+
   buffer[formatU32D(buffer, program_stats_get_text_size())] = 0;
   framebuffer_render_text(framebuffer, buffer, 56, 8);
+
   buffer[formatU32D(buffer, program_stats_get_data_size())] = 0;
   framebuffer_render_text(framebuffer, buffer, 56, 16);
+
   framebuffer_render_text_P(framebuffer, rom_version, 56, 24);
+
+  buffer[formatU8X(buffer, rom_random_8())] = 0;
+  framebuffer_render_text(framebuffer, buffer, 56, 32);
 
   framebuffer_send(display, framebuffer);
 }
