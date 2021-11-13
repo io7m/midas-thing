@@ -13,6 +13,11 @@
 #define FORMAT_U16_SIZE_BASE10 (5 + 1)
 #define FORMAT_U16_SIZE_BASE16 (4 + 1)
 
+#define FORMAT_U32_SIZE_BASE2 (32 + 1)
+#define FORMAT_U32_SIZE_BASE8 (11 + 1)
+#define FORMAT_U32_SIZE_BASE10 (10 + 1)
+#define FORMAT_U32_SIZE_BASE16 (8 + 1)
+
 uint8_t formatU8D(char *str, uint8_t x);
 uint8_t formatU8X(char *str, uint8_t x);
 uint8_t formatU8O(char *str, uint8_t x);
@@ -22,5 +27,10 @@ uint8_t formatU16D(char *str, uint16_t x);
 uint8_t formatU16X(char *str, uint16_t x);
 uint8_t formatU16O(char *str, uint16_t x);
 uint8_t formatU16B(char *str, uint16_t x);
+
+uint8_t formatU32D(char *str, uint32_t x);
+uint8_t formatU32X(char *str, uint32_t x);
+uint8_t formatU32O(char *str, uint32_t x);
+uint8_t formatU32B(char *str, uint32_t x);
 
 #endif // FORMAT_H

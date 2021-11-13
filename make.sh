@@ -6,6 +6,8 @@ FILES="
 program.h
 program_rain.h
 program_rain.c
+program_stats.h
+program_stats.c
 all.c
 format.c
 format.h
@@ -69,6 +71,7 @@ do
 done
 
 ./c-compile build/program_rain.o program_rain.c
+./c-compile build/program_stats.o program_stats.c
 ./c-compile build/all.o all.c
 ./c-compile build/format.o format.c
 ./c-compile build/i2c_init.o i2c_init.c
@@ -148,7 +151,8 @@ build/transition_vbar.o
 ranlib build/transitions.a
 
 ar rc build/program.a \
-build/program_rain.o
+build/program_rain.o \
+build/program_stats.o
 ranlib build/program.a
 
 ar rc build/ssd1306.a \

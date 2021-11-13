@@ -12,6 +12,7 @@
 #include "framebuffer.h"
 #include "i2c.h"
 #include "program_rain.h"
+#include "program_stats.h"
 #include "rom.h"
 #include "ssd1306.h"
 #include "transitions.h"
@@ -21,15 +22,15 @@
 
 static struct ssd1306_t ssd1306;
 static struct framebuffer_t framebuffer;
-static char format_buffer[FORMAT_U16_SIZE_BASE2];
 
-static uint16_t size_used() {
-  return sizeof(ssd1306) + sizeof(framebuffer) + sizeof(format_buffer);
-}
+static const struct program_t *programs[] = {&program_rain, &program_stats};
+static const uint8_t program_count =
+    sizeof(programs) / sizeof(struct program_t *);
 
 #ifdef PANIC_DEBUG
 static void panic_if(uint8_t i, const char *message) {
   if (i == 0) {
+    char format_buffer[FORMAT_U16_SIZE_BASE2];
     uart_putchar('E');
     uart_putchar(' ');
     uart_puts_P(message);
@@ -113,8 +114,6 @@ int main(void) {
   }
 
   framebuffer_render_text_P(&framebuffer, PSTR("IO7M"), 48, 44);
-  format_buffer[formatU16X(format_buffer, size_used())] = 0;
-  framebuffer_render_text(&framebuffer, format_buffer, 0, 0);
   PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
 
   _delay_ms(1000);
@@ -123,11 +122,21 @@ int main(void) {
   framebuffer_init(&framebuffer);
   PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
 
-  program_rain.init(&ssd1306, &framebuffer);
+  uint8_t program_index = 0;
+  const struct program_t *program = programs[program_index];
+  program->init(&ssd1306, &framebuffer);
 
+  uint16_t time = 60;
   for (;;) {
-    program_rain.run(&ssd1306, &framebuffer);
-    // _delay_ms(16);
+    program->run(&ssd1306, &framebuffer);
+    if (time == 0) {
+      time = 60;
+      program_index = (program_index + 1) % program_count;
+      program = programs[program_index];
+      transition_vbars(&ssd1306, &framebuffer);
+      program->init(&ssd1306, &framebuffer);
+    }
+    --time;
   }
 
   return 0;

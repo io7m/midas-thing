@@ -17,5 +17,6 @@ void rom_character_for(struct rom_character_t *const rom, char ch);
 uint8_t rom_random_8();
 
 extern const uint8_t rom[ROM_SIZE] PROGMEM;
+extern const char rom_version[];
 
 #endif // ROM_H
