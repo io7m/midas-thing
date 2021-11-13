@@ -25,6 +25,7 @@ typedef enum {
 static struct raindrop_t rain_drops[RAIN_DROP_COUNT];
 static uint8_t rain_title_time;
 static rain_thunder_state_t rain_thunder;
+static uint8_t rain_thunder_x;
 
 static void program_rain_init_drop(struct raindrop_t *const r) {
   r->x = rom_random_8();
@@ -50,21 +51,22 @@ program_rain_render_thunder(struct ssd1306_t *const display,
                             struct framebuffer_t *const framebuffer) {
 
   struct framebuffer_blit_t rain_thunder_blit;
-  rain_thunder_blit.blit_width = 8;
-  rain_thunder_blit.blit_height = 16;
+  rain_thunder_blit.blit_width = 16;
+  rain_thunder_blit.blit_height = 32;
   rain_thunder_blit.source = rom;
   rain_thunder_blit.source_flash = 1;
   rain_thunder_blit.source_image_width = ROM_WIDTH;
   rain_thunder_blit.source_image_height = ROM_HEIGHT;
   rain_thunder_blit.source_x = 32;
-  rain_thunder_blit.source_y = 112;
-  rain_thunder_blit.target_x = 32;
-  rain_thunder_blit.target_y = 24;
+  rain_thunder_blit.source_y = 96;
+  rain_thunder_blit.target_x = rain_thunder_x;
+  rain_thunder_blit.target_y = 16;
 
   switch (rain_thunder) {
   case RAIN_THUNDER_IDLE: {
     if (rom_random_8() < 3) {
-      rain_thunder_blit.target_x = rom_random_8() & (FRAMEBUFFER_WIDTH - 1);
+      rain_thunder_x = rom_random_8() & (FRAMEBUFFER_WIDTH - 1);
+      rain_thunder_blit.target_x = rain_thunder_x;
       rain_thunder = RAIN_THUNDER_FLASH1;
       ssd1306_set_invert_on(display);
       framebuffer_blit(framebuffer, &rain_thunder_blit);

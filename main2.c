@@ -138,6 +138,7 @@ int main(void) {
       program->init(&ssd1306, &framebuffer);
     }
     --time;
+    _delay_ms(16);
   }
 
   return 0;
