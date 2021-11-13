@@ -49,4 +49,7 @@ void framebuffer_render_text_P(struct framebuffer_t *const f, const char *text,
 void framebuffer_render_text(struct framebuffer_t *const f, const char *text,
                              uint8_t x, uint8_t y);
 
+void framebuffer_render_vline(struct framebuffer_t *const f, uint8_t x,
+                              uint8_t y0, uint8_t y1, uint8_t v);
+
 #endif // FRAMEBUFFER_H

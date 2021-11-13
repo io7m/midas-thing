@@ -11,24 +11,31 @@
 #include "format.h"
 #include "framebuffer.h"
 #include "i2c.h"
+#include "program_rain.h"
 #include "rom.h"
 #include "ssd1306.h"
+#include "transitions.h"
 #include "uart.h"
 
 #define MIDAS_ADDRESS 0x3C
 
 static struct ssd1306_t ssd1306;
+static struct framebuffer_t framebuffer;
+static char format_buffer[FORMAT_U16_SIZE_BASE2];
+
+static uint16_t size_used() {
+  return sizeof(ssd1306) + sizeof(framebuffer) + sizeof(format_buffer);
+}
 
 #ifdef PANIC_DEBUG
 static void panic_if(uint8_t i, const char *message) {
   if (i == 0) {
-    char buffer[8] = {0};
     uart_putchar('E');
     uart_putchar(' ');
     uart_puts_P(message);
     uart_putchar(' ');
-    buffer[formatU8X(buffer, ssd1306.i2c.status)] = 0;
-    uart_puts(buffer);
+    buffer[formatU8X(format_buffer, ssd1306.i2c.status)] = 0;
+    uart_puts(format_buffer);
     uart_putchar('\n');
 
     DDRB = 0b11111111;
@@ -47,8 +54,6 @@ static void panic_if(uint8_t i, const char *message) {
 #else
 #define PANIC_ON_FAILURE(e) (e)
 #endif
-
-static struct framebuffer_t framebuffer;
 
 int main(void) {
   uart_init();
@@ -108,15 +113,21 @@ int main(void) {
   }
 
   framebuffer_render_text_P(&framebuffer, PSTR("IO7M"), 48, 44);
-
+  format_buffer[formatU16X(format_buffer, size_used())] = 0;
+  framebuffer_render_text(&framebuffer, format_buffer, 0, 0);
   PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
 
-  DDRB = 0b11111111;
+  _delay_ms(1000);
+  transition_vbars(&ssd1306, &framebuffer);
+
+  framebuffer_init(&framebuffer);
+  PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
+
+  program_rain.init(&ssd1306, &framebuffer);
+
   for (;;) {
-    PORTB = 0b00000000;
-    _delay_ms(16);
-    PORTB = 0b11111111;
-    _delay_ms(16);
+    program_rain.run(&ssd1306, &framebuffer);
+    // _delay_ms(16);
   }
 
   return 0;

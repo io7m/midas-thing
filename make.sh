@@ -3,6 +3,9 @@
 mkdir -p build
 
 FILES="
+program.h
+program_rain.h
+program_rain.c
 all.c
 format.c
 format.h
@@ -22,6 +25,9 @@ framebuffer_blit.c
 framebuffer_send.c
 framebuffer_text.c
 framebuffer_set.c
+framebuffer_vline.c
+transitions.h
+transition_vbar.c
 ssd1306.h
 ssd1306_clear.c
 ssd1306_display_all_on.c
@@ -62,6 +68,7 @@ do
   clang-format -i "$f"
 done
 
+./c-compile build/program_rain.o program_rain.c
 ./c-compile build/all.o all.c
 ./c-compile build/format.o format.c
 ./c-compile build/i2c_init.o i2c_init.c
@@ -75,8 +82,10 @@ done
 ./c-compile build/framebuffer_send.o framebuffer_send.c
 ./c-compile build/framebuffer_text.o framebuffer_text.c
 ./c-compile build/framebuffer_set.o framebuffer_set.c
+./c-compile build/framebuffer_vline.o framebuffer_vline.c
 ./c-compile build/main.o main.c
 ./c-compile build/main2.o main2.c
+./c-compile build/transition_vbar.o transition_vbar.c
 ./c-compile build/ssd1306_clear.o ssd1306_clear.c
 ./c-compile build/ssd1306_display_all_on.o ssd1306_display_all_on.c
 ./c-compile build/ssd1306_display_all_on_resume.o ssd1306_display_all_on_resume.c
@@ -114,6 +123,7 @@ build/framebuffer_init.o \
 build/framebuffer_blit.o \
 build/framebuffer_send.o \
 build/framebuffer_text.o \
+build/framebuffer_vline.o \
 build/framebuffer_set.o
 ranlib build/framebuffer.a
 
@@ -132,6 +142,14 @@ build/i2c_start.o \
 build/i2c_stop.o \
 build/i2c_write.o
 ranlib build/i2c.a
+
+ar rc build/transitions.a \
+build/transition_vbar.o
+ranlib build/transitions.a
+
+ar rc build/program.a \
+build/program_rain.o
+ranlib build/program.a
 
 ar rc build/ssd1306.a \
 build/ssd1306_display_off.o \
@@ -164,7 +182,7 @@ ranlib build/ssd1306.a
 
 ./c-link build/all build/all.o
 ./c-link build/main build/main.o build/format.o build/ssd1306.a build/i2c.a build/uart.a
-./c-link build/main2 build/main2.o build/format.o build/framebuffer.a build/ssd1306.a build/i2c.a build/uart.a build/rom.o
+./c-link build/main2 build/main2.o build/format.o build/program.a build/transitions.a build/framebuffer.a build/ssd1306.a build/i2c.a build/uart.a build/rom.o
 
 ./hex build/main.hex build/main
 ./hex build/main2.hex build/main2
