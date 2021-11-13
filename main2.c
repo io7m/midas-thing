@@ -11,7 +11,6 @@
 #include "format.h"
 #include "framebuffer.h"
 #include "i2c.h"
-#include "logo.h"
 #include "rom.h"
 #include "ssd1306.h"
 #include "uart.h"
@@ -89,57 +88,9 @@ int main(void) {
   PANIC_ON_FAILURE(ssd1306_set_page_address(&ssd1306, 0x0, 0x7));
 
   PANIC_ON_FAILURE(ssd1306_clear(&ssd1306, 0));
-
   PANIC_ON_FAILURE(ssd1306_set_contrast(&ssd1306, 0));
 
-  PANIC_ON_FAILURE(ssd1306_set_memory_addressing_mode(
-      &ssd1306, SSD1306_MEMORY_ADDRESSING_MODE_PAGE));
-
-  PANIC_ON_FAILURE(ssd1306_set_page_column_address(&ssd1306, 48));
-  PANIC_ON_FAILURE(ssd1306_set_page_start_address(&ssd1306, 2));
-
-  for (uint8_t p = 0; p < 32; ++p) {
-    PANIC_ON_FAILURE(i2c_start(&ssd1306.i2c, MIDAS_ADDRESS));
-    PANIC_ON_FAILURE(i2c_write(&ssd1306.i2c, 0x40));
-    const uint8_t logo_item = pgm_read_byte(logo + p);
-    PANIC_ON_FAILURE(i2c_write(&ssd1306.i2c, logo_item));
-    i2c_stop(&ssd1306.i2c);
-  }
-
-  PANIC_ON_FAILURE(ssd1306_set_page_column_address(&ssd1306, 48));
-  PANIC_ON_FAILURE(ssd1306_set_page_start_address(&ssd1306, 3));
-
-  for (uint8_t p = 32; p < 64; ++p) {
-    PANIC_ON_FAILURE(i2c_start(&ssd1306.i2c, MIDAS_ADDRESS));
-    PANIC_ON_FAILURE(i2c_write(&ssd1306.i2c, 0x40));
-    const uint8_t logo_item = pgm_read_byte(logo + p);
-    PANIC_ON_FAILURE(i2c_write(&ssd1306.i2c, logo_item));
-    i2c_stop(&ssd1306.i2c);
-  }
-
-  PANIC_ON_FAILURE(ssd1306_set_page_column_address(&ssd1306, 48));
-  PANIC_ON_FAILURE(ssd1306_set_page_start_address(&ssd1306, 4));
-
-  for (uint8_t p = 64; p < 96; ++p) {
-    PANIC_ON_FAILURE(i2c_start(&ssd1306.i2c, MIDAS_ADDRESS));
-    PANIC_ON_FAILURE(i2c_write(&ssd1306.i2c, 0x40));
-    const uint8_t logo_item = pgm_read_byte(logo + p);
-    PANIC_ON_FAILURE(i2c_write(&ssd1306.i2c, logo_item));
-    i2c_stop(&ssd1306.i2c);
-  }
-
-  PANIC_ON_FAILURE(ssd1306_set_page_column_address(&ssd1306, 48));
-  PANIC_ON_FAILURE(ssd1306_set_page_start_address(&ssd1306, 5));
-
-  for (uint8_t p = 96; p < 128; ++p) {
-    PANIC_ON_FAILURE(i2c_start(&ssd1306.i2c, MIDAS_ADDRESS));
-    PANIC_ON_FAILURE(i2c_write(&ssd1306.i2c, 0x40));
-    const uint8_t logo_item = pgm_read_byte(logo + p);
-    PANIC_ON_FAILURE(i2c_write(&ssd1306.i2c, logo_item));
-    i2c_stop(&ssd1306.i2c);
-  }
-
-  _delay_ms(1000);
+  PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
 
   {
     struct framebuffer_blit_t blit;
@@ -156,20 +107,7 @@ int main(void) {
     framebuffer_blit(&framebuffer, &blit);
   }
 
-  for (uint8_t i = 0; i < 8; ++i) {
-    struct framebuffer_blit_t blit;
-    blit.source = rom;
-    blit.source_flash = 1;
-    blit.source_image_width = ROM_WIDTH;
-    blit.source_image_height = ROM_HEIGHT;
-    blit.source_x = i * 8;
-    blit.source_y = 0;
-    blit.target_x = 32 + (i * 8);
-    blit.target_y = 48;
-    blit.blit_width = 8;
-    blit.blit_height = 8;
-    framebuffer_blit(&framebuffer, &blit);
-  }
+  framebuffer_render_text_P(&framebuffer, PSTR("IO7M"), 48, 44);
 
   PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
 

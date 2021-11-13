@@ -12,8 +12,6 @@ i2c_reset.c
 i2c_start.c
 i2c_stop.c
 i2c_write.c
-logo.c
-logo.h
 main.c
 main2.c
 rom.h
@@ -22,6 +20,7 @@ framebuffer.h
 framebuffer_init.c
 framebuffer_blit.c
 framebuffer_send.c
+framebuffer_text.c
 framebuffer_set.c
 ssd1306.h
 ssd1306_clear.c
@@ -70,11 +69,11 @@ done
 ./c-compile build/i2c_start.o i2c_start.c
 ./c-compile build/i2c_stop.o i2c_stop.c
 ./c-compile build/i2c_write.o i2c_write.c
-./c-compile build/logo.o logo.c
 ./c-compile build/rom.o rom.c
 ./c-compile build/framebuffer_init.o framebuffer_init.c
 ./c-compile build/framebuffer_blit.o framebuffer_blit.c
 ./c-compile build/framebuffer_send.o framebuffer_send.c
+./c-compile build/framebuffer_text.o framebuffer_text.c
 ./c-compile build/framebuffer_set.o framebuffer_set.c
 ./c-compile build/main.o main.c
 ./c-compile build/main2.o main2.c
@@ -114,6 +113,7 @@ ar rc build/framebuffer.a \
 build/framebuffer_init.o \
 build/framebuffer_blit.o \
 build/framebuffer_send.o \
+build/framebuffer_text.o \
 build/framebuffer_set.o
 ranlib build/framebuffer.a
 
@@ -163,8 +163,8 @@ build/ssd1306_set_vcom_deselect.o
 ranlib build/ssd1306.a
 
 ./c-link build/all build/all.o
-./c-link build/main build/main.o build/format.o build/ssd1306.a build/i2c.a build/uart.a build/logo.o
-./c-link build/main2 build/main2.o build/format.o build/framebuffer.a build/ssd1306.a build/i2c.a build/uart.a build/logo.o build/rom.o
+./c-link build/main build/main.o build/format.o build/ssd1306.a build/i2c.a build/uart.a
+./c-link build/main2 build/main2.o build/format.o build/framebuffer.a build/ssd1306.a build/i2c.a build/uart.a build/rom.o
 
 ./hex build/main.hex build/main
 ./hex build/main2.hex build/main2
