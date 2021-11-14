@@ -14,7 +14,7 @@ static void program_stats_init(struct program_context_t *context) {
   ssd1306_set_invert_off(display);
 }
 
-static void program_stats_run(struct program_context_t *context) {
+static program_sleep_t program_stats_run(struct program_context_t *context) {
   struct framebuffer_t *const framebuffer = context->framebuffer;
 
   framebuffer_init(framebuffer);
@@ -22,7 +22,9 @@ static void program_stats_run(struct program_context_t *context) {
   framebuffer_render_text_P(framebuffer, PSTR("TEXT "), 8, 8);
   framebuffer_render_text_P(framebuffer, PSTR("DATA "), 8, 16);
   framebuffer_render_text_P(framebuffer, PSTR("VERS "), 8, 24);
-  framebuffer_render_text_P(framebuffer, PSTR("RNG  "), 8, 32);
+
+  framebuffer_render_text_P(framebuffer, rom_version(), 56, 24);
+  return PROGRAM_SLEEP;
 }
 
 static PGM_P program_stats_name(void) { return PSTR("stats"); }

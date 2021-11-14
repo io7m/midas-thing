@@ -142,7 +142,7 @@ static void program_rain_update_drops() {
   }
 }
 
-static void program_rain_run(struct program_context_t *context) {
+static program_sleep_t program_rain_run(struct program_context_t *context) {
   struct ssd1306_t *const display = context->display;
   struct framebuffer_t *const framebuffer = context->framebuffer;
 
@@ -157,6 +157,7 @@ static void program_rain_run(struct program_context_t *context) {
   program_rain_render_title(framebuffer);
   program_rain_render_background(framebuffer);
   program_rain_render_drops(framebuffer);
+  return PROGRAM_NO_SLEEP;
 }
 
 static PGM_P program_rain_name(void) { return PSTR("rain"); }

@@ -4,6 +4,7 @@
 #include <avr/interrupt.h>
 #include <avr/io.h>
 #include <avr/pgmspace.h>
+#include <avr/sleep.h>
 #include <util/delay.h>
 #include <util/twi.h>
 
@@ -33,6 +34,8 @@ static const struct program_t *const programs[] = {&program_rain,
                                                    &program_stats};
 static const uint8_t program_count =
     sizeof(programs) / sizeof(struct program_t *);
+
+static const struct program_t *program_running;
 
 #ifdef PANIC_DEBUG
 static void panic_if(uint8_t i, const char *message) {
@@ -196,6 +199,53 @@ static void main_read_buttons(void) {
 
 ISR(PCINT1_vect) { rom_random_8(); }
 
+static uint8_t main_menu_selection = 0;
+
+static void main_menu(void) {
+  main_read_buttons();
+
+  /*
+   * Handle button menu selections.
+   */
+
+  if (buttons_changed(&buttons)) {
+    if (button_0_set(&buttons)) {
+      main_menu_selection = (main_menu_selection - 1) & (program_count - 1);
+    } else if (button_2_set(&buttons)) {
+      main_menu_selection = (main_menu_selection + 1) & (program_count - 1);
+    } else if (button_1_set(&buttons)) {
+      program_running = programs[main_menu_selection];
+      program_running->init(&program_context);
+      return;
+    }
+  }
+
+  /*
+   * Render the menu.
+   */
+
+  framebuffer_init(&framebuffer);
+
+  uint8_t y = 8;
+  for (uint8_t index = 0; index < program_count; ++index) {
+    const struct program_t *const program = programs[index];
+    if (index == main_menu_selection) {
+      framebuffer_render_text_P(&framebuffer, PSTR(">"), 8, y);
+    }
+    framebuffer_render_text_P(&framebuffer, program->name(), 24, y);
+    y += 8;
+  }
+
+  PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
+
+  /*
+   * Go to sleep until there's an interrupt.
+   */
+
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  sleep_mode();
+}
+
 int main(void) {
   uart_init();
 
@@ -203,16 +253,44 @@ int main(void) {
   main_title();
   main_init_buttons();
 
-  uint8_t program_index = 0;
-  const struct program_t *program = programs[program_index];
-  program->init(&program_context);
-
   for (;;) {
+    if (!program_running) {
+      main_menu();
+      continue;
+    }
+
+    /*
+     * Check to see if the "menu" button has been pressed, and stop
+     * the program running if so.
+     */
+
     main_read_buttons();
-    program->run(&program_context);
-    button_set_changed(&buttons, 0);
+    if (buttons_changed(&buttons)) {
+      if (button_3_set(&buttons)) {
+        program_running = 0;
+        continue;
+      }
+    }
+
+    const program_sleep_t want_sleep = program_running->run(&program_context);
     PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
-    _delay_ms(16);
+
+    /*
+     * Go to sleep if the program requests it, or just pause for a bit
+     * for a consistent frame rate.
+     */
+
+    switch (want_sleep) {
+    case PROGRAM_NO_SLEEP: {
+      _delay_ms(16);
+      break;
+    }
+    case PROGRAM_SLEEP: {
+      set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+      sleep_mode();
+      break;
+    }
+    }
   }
 
   return 0;
