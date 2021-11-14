@@ -14,6 +14,7 @@
 #include "format.h"
 #include "framebuffer.h"
 #include "i2c.h"
+#include "program_3card.h"
 #include "program_magic8.h"
 #include "program_rain.h"
 #include "program_stats.h"
@@ -32,7 +33,7 @@ static struct program_context_t program_context = {
     .buttons = &buttons, .display = &ssd1306, .framebuffer = &framebuffer};
 
 static const struct program_t *const programs[] = {
-    &program_magic8, &program_rain, &program_stats};
+    &program_3card, &program_magic8, &program_rain, &program_stats};
 
 static const uint8_t program_count =
     sizeof(programs) / sizeof(struct program_t *);

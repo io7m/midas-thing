@@ -30,6 +30,8 @@ program_stats.c
 program_stats.h
 program_magic8.c
 program_magic8.h
+program_3card.c
+program_3card.h
 rom.c
 rom.h
 ssd1306.h
@@ -77,6 +79,7 @@ done
 ./c-compile build/program_rain.o program_rain.c
 ./c-compile build/program_stats.o program_stats.c
 ./c-compile build/program_magic8.o program_magic8.c
+./c-compile build/program_3card.o program_3card.c
 ./c-compile build/all.o all.c
 ./c-compile build/format.o format.c
 ./c-compile build/i2c_init.o i2c_init.c
@@ -159,7 +162,8 @@ ranlib build/transitions.a
 ar rc build/program.a \
 build/program_rain.o \
 build/program_stats.o \
-build/program_magic8.o
+build/program_magic8.o \
+build/program_3card.o
 ranlib build/program.a
 
 ar rc build/ssd1306.a \
