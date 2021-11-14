@@ -6,6 +6,38 @@
 
 static const char HEX[] PROGMEM = "0123456789abcdef";
 
+uint8_t formatU8B(char *str, uint8_t x) {
+  uint8_t quotient = x;
+  uint8_t length = 1;
+
+  /*
+   * Determine the number of digits.
+   */
+
+  while (quotient > 1) {
+    ++length;
+    quotient /= 2;
+  }
+
+  /*
+   * Render digits.
+   */
+
+  uint8_t index = length - 1;
+  for (;;) {
+    const char ch = '0' + (x % 2);
+    str[index] = ch;
+    x /= 2;
+
+    if (index == 0) {
+      break;
+    }
+    --index;
+  }
+
+  return length;
+}
+
 uint8_t formatU8X(char *str, uint8_t x) {
   uint8_t quotient = x;
   uint8_t length = 1;

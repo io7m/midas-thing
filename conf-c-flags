@@ -10,7 +10,7 @@
 -Wno-unused-const-variable
 -Wpedantic
 -g
--mmcu=atmega2560
+-mmcu=atmega328p
 -funsigned-char
 -funsigned-bitfields
 -fpack-struct

@@ -3,14 +3,18 @@
 mkdir -p build
 
 FILES="
-program.h
-program_rain.h
-program_rain.c
-program_stats.h
-program_stats.c
 all.c
+buttons.h
+buttons.c
 format.c
 format.h
+framebuffer.h
+framebuffer_blit.c
+framebuffer_init.c
+framebuffer_send.c
+framebuffer_set.c
+framebuffer_text.c
+framebuffer_vline.c
 i2c.h
 i2c_init.c
 i2c_reset.c
@@ -19,31 +23,27 @@ i2c_stop.c
 i2c_write.c
 main.c
 main2.c
-rom.h
+program.h
+program_rain.c
+program_rain.h
+program_stats.c
+program_stats.h
 rom.c
-framebuffer.h
-framebuffer_init.c
-framebuffer_blit.c
-framebuffer_send.c
-framebuffer_text.c
-framebuffer_set.c
-framebuffer_vline.c
-transitions.h
-transition_vbar.c
+rom.h
 ssd1306.h
 ssd1306_clear.c
+ssd1306_data.c
 ssd1306_display_all_on.c
 ssd1306_display_all_on_resume.c
 ssd1306_display_off.c
 ssd1306_display_on.c
+ssd1306_horizontal_scroll.c
 ssd1306_init.c
-ssd1306_data.c
 ssd1306_send_command.c
 ssd1306_set_charge_pump.c
 ssd1306_set_clock_divider.c
 ssd1306_set_column_address.c
 ssd1306_set_com_output_scan.c
-ssd1306_horizontal_scroll.c
 ssd1306_set_com_pins_configuration.c
 ssd1306_set_contrast.c
 ssd1306_set_display_offset.c
@@ -57,6 +57,8 @@ ssd1306_set_page_start_address.c
 ssd1306_set_precharge_period.c
 ssd1306_set_segment_remap.c
 ssd1306_set_vcom_deselect.c
+transition_vbar.c
+transitions.h
 uart.h
 uart_getchar.c
 uart_init.c
@@ -80,6 +82,7 @@ done
 ./c-compile build/i2c_stop.o i2c_stop.c
 ./c-compile build/i2c_write.o i2c_write.c
 ./c-compile build/rom.o rom.c
+./c-compile build/buttons.o buttons.c
 ./c-compile build/framebuffer_init.o framebuffer_init.c
 ./c-compile build/framebuffer_blit.o framebuffer_blit.c
 ./c-compile build/framebuffer_send.o framebuffer_send.c
@@ -186,7 +189,7 @@ ranlib build/ssd1306.a
 
 ./c-link build/all build/all.o
 ./c-link build/main build/main.o build/format.o build/ssd1306.a build/i2c.a build/uart.a
-./c-link build/main2 build/main2.o build/format.o build/program.a build/transitions.a build/framebuffer.a build/ssd1306.a build/i2c.a build/uart.a build/rom.o
+./c-link build/main2 build/main2.o build/format.o build/program.a build/transitions.a build/framebuffer.a build/ssd1306.a build/i2c.a build/uart.a build/rom.o build/buttons.o
 
 ./hex build/main.hex build/main
 ./hex build/main2.hex build/main2

@@ -13,6 +13,7 @@ struct raindrop_t {
 
 typedef enum {
   RAIN_THUNDER_IDLE,
+  RAIN_THUNDER_START,
   RAIN_THUNDER_FLASH1,
   RAIN_THUNDER_PAUSE1,
   RAIN_THUNDER_FLASH2
@@ -33,8 +34,9 @@ static void program_rain_init_drop(struct raindrop_t *const r) {
   r->speed = RAIN_SPEED_MINIMUM + (rom_random_8() & RAIN_SPEED_MAXIMUM);
 }
 
-static void program_rain_init(struct ssd1306_t *const display,
-                              struct framebuffer_t *const framebuffer) {
+static void program_rain_init(struct program_context_t *context) {
+  struct ssd1306_t *const display = context->display;
+
   ssd1306_set_invert_off(display);
 
   rain_thunder = RAIN_THUNDER_IDLE;
@@ -65,12 +67,16 @@ program_rain_render_thunder(struct ssd1306_t *const display,
   switch (rain_thunder) {
   case RAIN_THUNDER_IDLE: {
     if (rom_random_8() < 3) {
-      rain_thunder_x = rom_random_8() & (FRAMEBUFFER_WIDTH - 1);
-      rain_thunder_blit.target_x = rain_thunder_x;
-      rain_thunder = RAIN_THUNDER_FLASH1;
-      ssd1306_set_invert_on(display);
-      framebuffer_blit(framebuffer, &rain_thunder_blit);
+      rain_thunder = RAIN_THUNDER_START;
     }
+    break;
+  }
+  case RAIN_THUNDER_START: {
+    rain_thunder_x = rom_random_8() & (FRAMEBUFFER_WIDTH - 1);
+    rain_thunder_blit.target_x = rain_thunder_x;
+    rain_thunder = RAIN_THUNDER_FLASH1;
+    ssd1306_set_invert_on(display);
+    framebuffer_blit(framebuffer, &rain_thunder_blit);
     break;
   }
   case RAIN_THUNDER_FLASH1: {
@@ -136,18 +142,21 @@ static void program_rain_update_drops() {
   }
 }
 
-static void program_rain_run(struct ssd1306_t *const display,
-                             struct framebuffer_t *const framebuffer) {
+static void program_rain_run(struct program_context_t *context) {
+  struct ssd1306_t *const display = context->display;
+  struct framebuffer_t *const framebuffer = context->framebuffer;
+
   framebuffer_init(framebuffer);
 
-  program_rain_update_drops();
+  if (buttons_changed(context->buttons) && button_0_set(context->buttons)) {
+    rain_thunder = RAIN_THUNDER_START;
+  }
 
+  program_rain_update_drops();
   program_rain_render_thunder(display, framebuffer);
   program_rain_render_title(framebuffer);
   program_rain_render_background(framebuffer);
   program_rain_render_drops(framebuffer);
-
-  framebuffer_send(display, framebuffer);
 }
 
 static PGM_P program_rain_name(void) { return PSTR("rain"); }

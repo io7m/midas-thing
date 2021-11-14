@@ -15,10 +15,10 @@ FILE="$1"
 shift
 
 exec avrdude \
-  -p atmega2560 \
-  -c wiring \
-  -P /dev/ttyACM1 \
-  -b 115200 \
+  -p m328p \
+  -c arduino \
+  -P /dev/ttyUSB0 \
+  -b 57600 \
   -D \
   -v \
   -U flash:w:"${FILE}":i

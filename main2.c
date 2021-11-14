@@ -1,6 +1,7 @@
 #ifndef MAIN2_C
 #define MAIN2_C
 
+#include <avr/interrupt.h>
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 #include <util/delay.h>
@@ -8,6 +9,7 @@
 
 #include <stdint.h>
 
+#include "buttons.h"
 #include "format.h"
 #include "framebuffer.h"
 #include "i2c.h"
@@ -22,6 +24,10 @@
 
 static struct ssd1306_t ssd1306;
 static struct framebuffer_t framebuffer;
+static struct buttons_t buttons;
+
+static struct program_context_t program_context = {
+    .buttons = &buttons, .display = &ssd1306, .framebuffer = &framebuffer};
 
 static const struct program_t *const programs[] = {&program_rain,
                                                    &program_stats};
@@ -41,7 +47,6 @@ static void panic_if(uint8_t i, const char *message) {
     uart_putchar('\n');
 
     for (;;) {
-
     }
   }
 }
@@ -53,31 +58,25 @@ static void panic_if(uint8_t i, const char *message) {
 #define PANIC_ON_FAILURE(e) (e)
 #endif
 
-int main(void) {
-  uart_init();
+/*
+ * Initialize the display.
+ */
+
+static void main_init_display(void) {
 
   /*
-   * Enable pull-up resistors on port D (the pins attached to the i2c bus).
+   * Configure PORTC as an input port.
+   * Enable pull-up resistors on the i2c bus pins.
    */
 
-  DDRD = 0b00000000;
-  PORTD = 0b11111111;
-
-  /*
-   * Configure some pins as button inputs. Configure the internal pull-up
-   * resistors on the button inputs.
-   */
-
-  DDRB &= ~(0b00000111);
-  PORTB |= (0b00000111);
-  DDRD &= ~(0b10000000);
-  PORTD |= (0b10000000);
+  DDRC = 0b00000000;
+  PORTC = 0b00110000;
 
   ssd1306_init(&ssd1306, MIDAS_ADDRESS);
   framebuffer_init(&framebuffer);
 
   PANIC_ON_FAILURE(ssd1306_display_off(&ssd1306));
-  PANIC_ON_FAILURE(ssd1306_set_clock_divider(&ssd1306, 0b00000000));
+  PANIC_ON_FAILURE(ssd1306_set_clock_divider(&ssd1306, 0x80));
   PANIC_ON_FAILURE(ssd1306_set_multiplex_ratio(&ssd1306, 63));
   PANIC_ON_FAILURE(ssd1306_set_display_offset(&ssd1306, 0x00));
   PANIC_ON_FAILURE(ssd1306_set_display_start_line(&ssd1306, 0x00));
@@ -89,7 +88,7 @@ int main(void) {
       &ssd1306, SSD1306_SET_COM_OUTPUT_SCAN_DECREMENT));
   PANIC_ON_FAILURE(ssd1306_set_com_pins_configuration(&ssd1306, 0x12));
   PANIC_ON_FAILURE(ssd1306_set_contrast(&ssd1306, 0xff));
-  PANIC_ON_FAILURE(ssd1306_set_precharge_period(&ssd1306, 0xF1));
+  PANIC_ON_FAILURE(ssd1306_set_precharge_period(&ssd1306, 0x22));
   PANIC_ON_FAILURE(ssd1306_set_vcom_deselect(&ssd1306, 0x40));
   PANIC_ON_FAILURE(ssd1306_display_all_on_resume(&ssd1306));
   PANIC_ON_FAILURE(ssd1306_set_invert_off(&ssd1306));
@@ -104,21 +103,25 @@ int main(void) {
   PANIC_ON_FAILURE(ssd1306_set_contrast(&ssd1306, 0));
 
   PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
+}
 
-  {
-    struct framebuffer_blit_t blit;
-    blit.source = rom;
-    blit.source_flash = 1;
-    blit.source_image_width = ROM_WIDTH;
-    blit.source_image_height = ROM_HEIGHT;
-    blit.source_x = 0;
-    blit.source_y = 96;
-    blit.target_x = 48;
-    blit.target_y = 8;
-    blit.blit_width = 32;
-    blit.blit_height = 32;
-    framebuffer_blit(&framebuffer, &blit);
-  }
+/*
+ * Display the title.
+ */
+
+static void main_title(void) {
+  struct framebuffer_blit_t blit;
+  blit.source = rom;
+  blit.source_flash = 1;
+  blit.source_image_width = ROM_WIDTH;
+  blit.source_image_height = ROM_HEIGHT;
+  blit.source_x = 0;
+  blit.source_y = 96;
+  blit.target_x = 48;
+  blit.target_y = 8;
+  blit.blit_width = 32;
+  blit.blit_height = 32;
+  framebuffer_blit(&framebuffer, &blit);
 
   framebuffer_render_text_P(&framebuffer, PSTR("IO7M"), 48, 44);
   PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
@@ -128,23 +131,87 @@ int main(void) {
 
   framebuffer_init(&framebuffer);
   PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
+}
+
+/*
+ * Configure the button inputs and interrupts.
+ */
+
+static void main_init_buttons(void) {
+  /*
+   * Set the four button pins as inputs, and enable pull-up
+   * resistors on the button pins.
+   */
+
+  DDRC &= ~(0b00001111);
+  PORTC |= 0b00001111;
+
+  /*
+   * Enable interrupts for PORTC.
+   */
+
+  PCICR = (1 << PCIE1);
+  PCMSK1 = 0;
+  PCMSK1 |= (1 << PCINT8);
+  PCMSK1 |= (1 << PCINT9);
+  PCMSK1 |= (1 << PCINT10);
+  PCMSK1 |= (1 << PCINT11);
+  sei();
+}
+
+static void main_read_buttons(void) {
+  const uint8_t pins_now = ~(PINC & 0b1111);
+  const uint8_t buttons_then = buttons.buttons;
+
+  if ((pins_now & BUTTON_0) == BUTTON_0) {
+    buttons.buttons |= BUTTON_0;
+  } else {
+    buttons.buttons &= ~BUTTON_0;
+  }
+
+  if ((pins_now & BUTTON_1) == BUTTON_1) {
+    buttons.buttons |= BUTTON_1;
+  } else {
+    buttons.buttons &= ~BUTTON_1;
+  }
+
+  if ((pins_now & BUTTON_2) == BUTTON_2) {
+    buttons.buttons |= BUTTON_2;
+  } else {
+    buttons.buttons &= ~BUTTON_2;
+  }
+
+  if ((pins_now & BUTTON_3) == BUTTON_3) {
+    buttons.buttons |= BUTTON_3;
+  } else {
+    buttons.buttons &= ~BUTTON_3;
+  }
+
+  button_set_changed(&buttons, buttons.buttons != buttons_then);
+}
+
+/*
+ * The interrupt vector for buttons.
+ */
+
+ISR(PCINT1_vect) { rom_random_8(); }
+
+int main(void) {
+  uart_init();
+
+  main_init_display();
+  main_title();
+  main_init_buttons();
 
   uint8_t program_index = 0;
   const struct program_t *program = programs[program_index];
-  program->init(&ssd1306, &framebuffer);
+  program->init(&program_context);
 
-  uint16_t time = 60;
   for (;;) {
-    program->run(&ssd1306, &framebuffer);
-
-    if (time == 0) {
-      time = 60;
-      program_index = (program_index + 1) % program_count;
-      program = programs[program_index];
-      transition_vbars(&ssd1306, &framebuffer);
-      program->init(&ssd1306, &framebuffer);
-    }
-    --time;
+    main_read_buttons();
+    program->run(&program_context);
+    button_set_changed(&buttons, 0);
+    PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
     _delay_ms(16);
   }
 
