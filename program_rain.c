@@ -150,7 +150,10 @@ static void program_rain_run(struct ssd1306_t *const display,
   framebuffer_send(display, framebuffer);
 }
 
+static PGM_P program_rain_name(void) { return PSTR("rain"); }
+
 const struct program_t program_rain = {
+    .name = &program_rain_name,
     .init = &program_rain_init,
     .run = &program_rain_run,
 };

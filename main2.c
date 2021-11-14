@@ -40,12 +40,8 @@ static void panic_if(uint8_t i, const char *message) {
     uart_puts(format_buffer);
     uart_putchar('\n');
 
-    DDRB = 0b11111111;
     for (;;) {
-      PORTB = 0b00000000;
-      _delay_ms(50);
-      PORTB = 0b11111111;
-      _delay_ms(50);
+
     }
   }
 }
@@ -66,6 +62,16 @@ int main(void) {
 
   DDRD = 0b00000000;
   PORTD = 0b11111111;
+
+  /*
+   * Configure some pins as button inputs. Configure the internal pull-up
+   * resistors on the button inputs.
+   */
+
+  DDRB &= ~(0b00000111);
+  PORTB |= (0b00000111);
+  DDRD &= ~(0b10000000);
+  PORTD |= (0b10000000);
 
   ssd1306_init(&ssd1306, MIDAS_ADDRESS);
   framebuffer_init(&framebuffer);
@@ -130,6 +136,7 @@ int main(void) {
   uint16_t time = 60;
   for (;;) {
     program->run(&ssd1306, &framebuffer);
+
     if (time == 0) {
       time = 60;
       program_index = (program_index + 1) % program_count;

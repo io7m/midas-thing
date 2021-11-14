@@ -56,7 +56,10 @@ static void program_stats_run(struct ssd1306_t *const display,
   framebuffer_send(display, framebuffer);
 }
 
+static PGM_P program_stats_name(void) { return PSTR("stats"); }
+
 const struct program_t program_stats = {
+    .name = &program_stats_name,
     .init = &program_stats_init,
     .run = &program_stats_run,
 };

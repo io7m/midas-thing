@@ -191,3 +191,4 @@ ranlib build/ssd1306.a
 ./hex build/main.hex build/main
 ./hex build/main2.hex build/main2
 ./hex build/all.hex build/all
+
