@@ -14,6 +14,7 @@
 #include "format.h"
 #include "framebuffer.h"
 #include "i2c.h"
+#include "program_magic8.h"
 #include "program_rain.h"
 #include "program_stats.h"
 #include "rom.h"
@@ -30,8 +31,9 @@ static struct buttons_t buttons;
 static struct program_context_t program_context = {
     .buttons = &buttons, .display = &ssd1306, .framebuffer = &framebuffer};
 
-static const struct program_t *const programs[] = {&program_rain,
-                                                   &program_stats};
+static const struct program_t *const programs[] = {
+    &program_magic8, &program_rain, &program_stats};
+
 static const uint8_t program_count =
     sizeof(programs) / sizeof(struct program_t *);
 
@@ -210,9 +212,17 @@ static void main_menu(void) {
 
   if (buttons_changed(&buttons)) {
     if (button_0_set(&buttons)) {
-      main_menu_selection = (main_menu_selection - 1) & (program_count - 1);
+      if (main_menu_selection == 0) {
+        main_menu_selection = program_count - 1;
+      } else {
+        main_menu_selection = main_menu_selection - 1;
+      }
     } else if (button_2_set(&buttons)) {
-      main_menu_selection = (main_menu_selection + 1) & (program_count - 1);
+      if (main_menu_selection == program_count - 1) {
+        main_menu_selection = 0;
+      } else {
+        main_menu_selection = main_menu_selection + 1;
+      }
     } else if (button_1_set(&buttons)) {
       program_running = programs[main_menu_selection];
       program_running->init(&program_context);
