@@ -5,6 +5,8 @@ mkdir -p build
 FILES="
 sizes.h
 all.c
+adc.c
+adc.h
 buttons.h
 buttons.c
 format.c
@@ -31,8 +33,10 @@ program_stats.c
 program_stats.h
 program_magic8.c
 program_magic8.h
-program_3card.c
+program_noise.c
+program_noise.h
 program_3card.h
+program_3card.c
 rom.c
 rom.h
 ssd1306.h
@@ -86,6 +90,8 @@ done
 ./c-compile build/program_stats.o program_stats.c
 ./c-compile build/program_magic8.o program_magic8.c
 ./c-compile build/program_3card.o program_3card.c
+./c-compile build/program_noise.o program_noise.c
+./c-compile build/adc.o adc.c
 ./c-compile build/all.o all.c
 ./c-compile build/format.o format.c
 ./c-compile build/i2c_init.o i2c_init.c
@@ -169,8 +175,13 @@ ar rc build/program.a \
 build/program_rain.o \
 build/program_stats.o \
 build/program_magic8.o \
+build/program_noise.o \
 build/program_3card.o
 ranlib build/program.a
+
+ar rc build/adc.a \
+build/adc.o
+ranlib build/adc.a
 
 ar rc build/ssd1306.a \
 build/ssd1306_display_off.o \
@@ -212,6 +223,7 @@ build/framebuffer.a \
 build/ssd1306.a \
 build/i2c.a \
 build/uart.a \
+build/adc.a \
 build/rom.o \
 build/buttons.o \
 build/sizes.o \

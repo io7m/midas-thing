@@ -18,6 +18,4 @@ uint8_t rom_random_8();
 
 extern const uint8_t rom[ROM_SIZE] PROGMEM;
 
-PGM_P rom_version(void);
-
 #endif // ROM_H

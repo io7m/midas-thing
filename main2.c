@@ -10,12 +10,14 @@
 
 #include <stdint.h>
 
+#include "adc.h"
 #include "buttons.h"
 #include "format.h"
 #include "framebuffer.h"
 #include "i2c.h"
 #include "program_3card.h"
 #include "program_magic8.h"
+#include "program_noise.h"
 #include "program_rain.h"
 #include "program_stats.h"
 #include "rom.h"
@@ -33,7 +35,8 @@ static struct program_context_t program_context = {
     .buttons = &buttons, .display = &ssd1306, .framebuffer = &framebuffer};
 
 static const struct program_t *const programs[] = {
-    &program_3card, &program_magic8, &program_rain, &program_stats};
+    &program_3card, &program_magic8, &program_noise, &program_rain,
+    &program_stats};
 
 static const uint8_t program_count =
     sizeof(programs) / sizeof(struct program_t *);
@@ -245,6 +248,7 @@ static void main_menu(void) {
   }
 
   PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
+  ssd1306_set_invert_off(&ssd1306);
 
   /*
    * Go to sleep until there's an interrupt.
@@ -256,6 +260,7 @@ static void main_menu(void) {
 
 int main(void) {
   uart_init();
+  adc_init();
 
   main_init_display();
   main_title();
