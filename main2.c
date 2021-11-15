@@ -149,24 +149,24 @@ static void main_init_buttons(void) {
    * resistors on the button pins.
    */
 
-  DDRC &= ~(0b00001111);
-  PORTC |= 0b00001111;
+  DDRD &= ~(0b00111100);
+  PORTD |= 0b00111100;
 
   /*
-   * Enable interrupts for PORTC.
+   * Enable interrupts for PORTD.
    */
 
-  PCICR = (1 << PCIE1);
-  PCMSK1 = 0;
-  PCMSK1 |= (1 << PCINT8);
-  PCMSK1 |= (1 << PCINT9);
-  PCMSK1 |= (1 << PCINT10);
-  PCMSK1 |= (1 << PCINT11);
+  PCICR = (1 << PCIE2);
+  PCMSK2 = 0;
+  PCMSK2 |= (1 << PCINT18);
+  PCMSK2 |= (1 << PCINT19);
+  PCMSK2 |= (1 << PCINT20);
+  PCMSK2 |= (1 << PCINT21);
   sei();
 }
 
 static void main_read_buttons(void) {
-  const uint8_t pins_now = ~(PINC & 0b1111);
+  const uint8_t pins_now = ~(PIND & 0b00111100) >> 2;
   const uint8_t buttons_then = buttons.buttons;
 
   if ((pins_now & BUTTON_0) == BUTTON_0) {
@@ -200,7 +200,7 @@ static void main_read_buttons(void) {
  * The interrupt vector for buttons.
  */
 
-ISR(PCINT1_vect) { rom_random_8(); }
+ISR(PCINT2_vect) { rom_random_8(); }
 
 static uint8_t main_menu_selection = 0;
 
