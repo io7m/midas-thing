@@ -1,8 +1,10 @@
 #ifndef PROGRAM_RAIN_C
 #define PROGRAM_RAIN_C
 
-#include "program_rain.h"
+#include <stdlib.h>
+
 #include "program.h"
+#include "program_rain.h"
 #include "rom.h"
 
 struct raindrop_t {
@@ -29,9 +31,9 @@ static rain_thunder_state_t rain_thunder;
 static uint8_t rain_thunder_x;
 
 static void program_rain_init_drop(struct raindrop_t *const r) {
-  r->x = rom_random_8();
+  r->x = random();
   r->y = 0;
-  r->speed = RAIN_SPEED_MINIMUM + (rom_random_8() & RAIN_SPEED_MAXIMUM);
+  r->speed = RAIN_SPEED_MINIMUM + (random() & RAIN_SPEED_MAXIMUM);
 }
 
 static void program_rain_init(struct program_context_t *context) {
@@ -44,7 +46,7 @@ static void program_rain_init(struct program_context_t *context) {
   for (uint8_t i = 0; i < RAIN_DROP_COUNT; ++i) {
     struct raindrop_t *const r = &rain_drops[i];
     program_rain_init_drop(r);
-    r->y = rom_random_8() & (FRAMEBUFFER_HEIGHT - 1);
+    r->y = random() & (FRAMEBUFFER_HEIGHT - 1);
   }
 }
 
@@ -54,8 +56,6 @@ program_rain_render_thunder(struct ssd1306_t *const display,
 
   framebuffer_rom_blit_data.blit_width = 16;
   framebuffer_rom_blit_data.blit_height = 32;
-  framebuffer_rom_blit_data.source_image_width = ROM_WIDTH;
-  framebuffer_rom_blit_data.source_image_height = ROM_HEIGHT;
   framebuffer_rom_blit_data.source_x = 32;
   framebuffer_rom_blit_data.source_y = 96;
   framebuffer_rom_blit_data.target_x = rain_thunder_x;
@@ -63,13 +63,13 @@ program_rain_render_thunder(struct ssd1306_t *const display,
 
   switch (rain_thunder) {
   case RAIN_THUNDER_IDLE: {
-    if (rom_random_8() < 3) {
+    if (random() < 3) {
       rain_thunder = RAIN_THUNDER_START;
     }
     break;
   }
   case RAIN_THUNDER_START: {
-    rain_thunder_x = rom_random_8() & (FRAMEBUFFER_WIDTH - 1);
+    rain_thunder_x = random() & (FRAMEBUFFER_WIDTH - 1);
     framebuffer_rom_blit_data.target_x = rain_thunder_x;
     rain_thunder = RAIN_THUNDER_FLASH1;
     ssd1306_set_invert_on(display);
@@ -113,9 +113,8 @@ program_rain_render_background(struct framebuffer_t *const framebuffer) {
   }
 
   for (uint8_t q = 0; q < RAIN_DROP_COUNT; ++q) {
-    const uint8_t x = rom_random_8();
-    const uint8_t y =
-        (rom_random_8() & (RAIN_HORIZON_Y_HEIGHT - 1)) + RAIN_HORIZON_Y;
+    const uint8_t x = random();
+    const uint8_t y = (random() & (RAIN_HORIZON_Y_HEIGHT - 1)) + RAIN_HORIZON_Y;
     framebuffer_set(framebuffer, x, y, 1);
   }
 }

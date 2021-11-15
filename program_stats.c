@@ -4,7 +4,6 @@
 #include "program_stats.h"
 #include "format.h"
 #include "program.h"
-#include "rom.h"
 #include "sizes.h"
 #include "version.h"
 

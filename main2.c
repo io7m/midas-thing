@@ -9,6 +9,7 @@
 #include <util/twi.h>
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #include "adc.h"
 #include "buttons.h"
@@ -42,6 +43,7 @@ static const uint8_t program_count =
     sizeof(programs) / sizeof(struct program_t *);
 
 static const struct program_t *program_running;
+static const char program_cursor[] PROGMEM = ">";
 
 #ifdef PANIC_DEBUG
 static void panic_if(uint8_t i, const char *message) {
@@ -119,8 +121,6 @@ static void main_init_display(void) {
  */
 
 static void main_title(void) {
-  framebuffer_rom_blit_data.source_image_width = ROM_WIDTH;
-  framebuffer_rom_blit_data.source_image_height = ROM_HEIGHT;
   framebuffer_rom_blit_data.source_x = 0;
   framebuffer_rom_blit_data.source_y = 96;
   framebuffer_rom_blit_data.target_x = 48;
@@ -200,7 +200,7 @@ static void main_read_buttons(void) {
  * The interrupt vector for buttons.
  */
 
-ISR(PCINT2_vect) { rom_random_8(); }
+ISR(PCINT2_vect) { random(); }
 
 static uint8_t main_menu_selection = 0;
 
@@ -241,7 +241,7 @@ static void main_menu(void) {
   for (uint8_t index = 0; index < program_count; ++index) {
     const struct program_t *const program = programs[index];
     if (index == main_menu_selection) {
-      framebuffer_render_text_P(&framebuffer, PSTR(">"), 8, y);
+      framebuffer_render_text_P(&framebuffer, program_cursor, 8, y);
     }
     framebuffer_render_text_P(&framebuffer, program->name(), 24, y);
     y += 8;

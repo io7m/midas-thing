@@ -3,9 +3,9 @@
 
 #include "program_magic8.h"
 #include "program.h"
-#include "rom.h"
 
 #include <stdint.h>
+#include <stdlib.h>
 
 typedef enum { MAGIC8_ASK, MAGIC8_ROLLING, MAGIC8_ANSWERED } magic8_state_t;
 
@@ -63,8 +63,6 @@ static program_sleep_t program_magic8_run(struct program_context_t *context) {
 
     framebuffer_rom_blit_data.blit_width = 32;
     framebuffer_rom_blit_data.blit_height = 32;
-    framebuffer_rom_blit_data.source_image_width = ROM_WIDTH;
-    framebuffer_rom_blit_data.source_image_height = ROM_HEIGHT;
     framebuffer_rom_blit_data.source_x = 48;
     framebuffer_rom_blit_data.source_y = 96;
     framebuffer_rom_blit_data.target_x = 64 - (32 >> 1);
@@ -72,7 +70,7 @@ static program_sleep_t program_magic8_run(struct program_context_t *context) {
     framebuffer_blit(context->framebuffer, &framebuffer_rom_blit_data);
 
     if (program_magic8_timer == 0) {
-      const uint8_t index = rom_random_8() % program_magic8_responses_count;
+      const uint8_t index = random() % program_magic8_responses_count;
       program_answer = pgm_read_ptr(program_magic8_responses + index);
       program_answer_length = strlen_P(program_answer) * 8;
       program_magic8_state = MAGIC8_ANSWERED;
