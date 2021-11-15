@@ -70,6 +70,7 @@ uart_init.c
 uart_putchar.c
 uart_puts.c
 uart_puts_p.c
+version.h
 "
 
 for f in ${FILES}
@@ -77,7 +78,10 @@ do
   clang-format -i "$f"
 done
 
+./version.sh > build/version.c
+
 ./as-compile build/sizes.o sizes.s
+./c-compile build/version.o build/version.c
 ./c-compile build/program_rain.o program_rain.c
 ./c-compile build/program_stats.o program_stats.c
 ./c-compile build/program_magic8.o program_magic8.c
@@ -210,7 +214,8 @@ build/i2c.a \
 build/uart.a \
 build/rom.o \
 build/buttons.o \
-build/sizes.o
+build/sizes.o \
+build/version.o
 
 ./hex build/main.hex build/main
 ./hex build/main2.hex build/main2
