@@ -197,7 +197,17 @@ ranlib build/ssd1306.a
 
 ./c-link build/all build/all.o
 ./c-link build/main build/main.o build/format.o build/ssd1306.a build/i2c.a build/uart.a
-./c-link build/main2 build/main2.o build/format.o build/program.a build/transitions.a build/framebuffer.a build/ssd1306.a build/i2c.a build/uart.a build/rom.o build/buttons.o
+./c-link build/main2 \
+build/main2.o \
+build/format.o \
+build/program.a \
+build/transitions.a \
+build/framebuffer.a \
+build/ssd1306.a \
+build/i2c.a \
+build/uart.a \
+build/rom.o \
+build/buttons.o
 
 ./hex build/main.hex build/main
 ./hex build/main2.hex build/main2
