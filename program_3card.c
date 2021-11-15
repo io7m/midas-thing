@@ -27,10 +27,13 @@ typedef enum { CARD_HIDDEN = 0b00000001, CARD_LADY = 0b00000010 } card_flag_t;
 static uint8_t card_selection;
 static card_state_t card_state = CARD_WAITING;
 static struct card_t cards[3];
+static const char card_cursor[] PROGMEM = "^";
+static const char card_greeting[] PROGMEM = "B TO GO!";
 
 #define CARD_START_0_X 32
 #define CARD_START_1_X (CARD_START_0_X + 16 + 8)
 #define CARD_START_2_X (CARD_START_1_X + 16 + 8)
+#define CARD_START_Y 16
 
 static void program_3card_init(struct program_context_t *context) {
   struct ssd1306_t *const display = context->display;
@@ -40,26 +43,23 @@ static void program_3card_init(struct program_context_t *context) {
   card_state = CARD_WAITING;
 
   cards[0].x = CARD_START_0_X;
-  cards[0].y = 16;
+  cards[0].y = CARD_START_Y;
   cards[0].z = 2;
   cards[0].flags = CARD_LADY;
 
   cards[1].x = CARD_START_1_X;
-  cards[1].y = 16;
+  cards[1].y = CARD_START_Y;
   cards[1].z = 1;
   cards[1].flags = 0;
 
   cards[2].x = CARD_START_2_X;
-  cards[2].y = 16;
+  cards[2].y = CARD_START_Y;
   cards[2].z = 0;
   cards[2].flags = 0;
 }
 
 static void program_3card_render_cards(struct program_context_t *context) {
   struct framebuffer_t *const framebuffer = context->framebuffer;
-
-  framebuffer_rom_blit_data.source_image_height = ROM_HEIGHT;
-  framebuffer_rom_blit_data.source_image_width = ROM_WIDTH;
 
   /*
    * Render the cards in Z order. No attempt is made at efficiency, we just
@@ -74,11 +74,14 @@ static void program_3card_render_cards(struct program_context_t *context) {
         continue;
       }
 
+      /*
+       * Blit a blank card.
+       */
+
       framebuffer_rom_blit_data.blit_width = 16;
       framebuffer_rom_blit_data.blit_height = 24;
       framebuffer_rom_blit_data.source_x = 80;
       framebuffer_rom_blit_data.source_y = 104;
-
       framebuffer_rom_blit_data.target_x = card->x;
       framebuffer_rom_blit_data.target_y = card->y;
       framebuffer_blit(framebuffer, &framebuffer_rom_blit_data);
@@ -157,8 +160,7 @@ static program_sleep_t program_3card_run(struct program_context_t *context) {
      */
 
     program_3card_render_cards(context);
-    framebuffer_render_text_P(framebuffer, PSTR("B TO GO!"), CARD_START_0_X,
-                              48);
+    framebuffer_render_text_P(framebuffer, card_greeting, CARD_START_0_X, 48);
     return PROGRAM_SLEEP;
   }
 
@@ -196,15 +198,18 @@ static program_sleep_t program_3card_run(struct program_context_t *context) {
 
     switch (card_selection) {
     case 0: {
-      framebuffer_render_text_P(framebuffer, PSTR("^"), CARD_START_0_X + 4, 52);
+      framebuffer_render_text_P(framebuffer, card_cursor, CARD_START_0_X + 4,
+                                52);
       break;
     }
     case 1: {
-      framebuffer_render_text_P(framebuffer, PSTR("^"), CARD_START_1_X + 4, 52);
+      framebuffer_render_text_P(framebuffer, card_cursor, CARD_START_1_X + 4,
+                                52);
       break;
     }
     case 2: {
-      framebuffer_render_text_P(framebuffer, PSTR("^"), CARD_START_2_X + 4, 52);
+      framebuffer_render_text_P(framebuffer, card_cursor, CARD_START_2_X + 4,
+                                52);
       break;
     }
     }
