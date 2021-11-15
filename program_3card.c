@@ -58,11 +58,8 @@ static void program_3card_init(struct program_context_t *context) {
 static void program_3card_render_cards(struct program_context_t *context) {
   struct framebuffer_t *const framebuffer = context->framebuffer;
 
-  struct framebuffer_blit_t blit;
-  blit.source = rom;
-  blit.source_flash = 1;
-  blit.source_image_height = ROM_HEIGHT;
-  blit.source_image_width = ROM_WIDTH;
+  framebuffer_rom_blit_data.source_image_height = ROM_HEIGHT;
+  framebuffer_rom_blit_data.source_image_width = ROM_WIDTH;
 
   /*
    * Render the cards in Z order. No attempt is made at efficiency, we just
@@ -77,14 +74,14 @@ static void program_3card_render_cards(struct program_context_t *context) {
         continue;
       }
 
-      blit.blit_width = 16;
-      blit.blit_height = 24;
-      blit.source_x = 80;
-      blit.source_y = 104;
+      framebuffer_rom_blit_data.blit_width = 16;
+      framebuffer_rom_blit_data.blit_height = 24;
+      framebuffer_rom_blit_data.source_x = 80;
+      framebuffer_rom_blit_data.source_y = 104;
 
-      blit.target_x = card->x;
-      blit.target_y = card->y;
-      framebuffer_blit(framebuffer, &blit);
+      framebuffer_rom_blit_data.target_x = card->x;
+      framebuffer_rom_blit_data.target_y = card->y;
+      framebuffer_blit(framebuffer, &framebuffer_rom_blit_data);
 
       /*
        * If the card is hidden, don't render an icon.
@@ -99,13 +96,13 @@ static void program_3card_render_cards(struct program_context_t *context) {
        */
 
       if ((card->flags & CARD_LADY) == CARD_LADY) {
-        blit.blit_width = 8;
-        blit.blit_height = 8;
-        blit.source_x = 96;
-        blit.source_y = 104;
-        blit.target_x = card->x + 4;
-        blit.target_y = card->y + 8;
-        framebuffer_blit(framebuffer, &blit);
+        framebuffer_rom_blit_data.blit_width = 8;
+        framebuffer_rom_blit_data.blit_height = 8;
+        framebuffer_rom_blit_data.source_x = 96;
+        framebuffer_rom_blit_data.source_y = 104;
+        framebuffer_rom_blit_data.target_x = card->x + 4;
+        framebuffer_rom_blit_data.target_y = card->y + 8;
+        framebuffer_blit(framebuffer, &framebuffer_rom_blit_data);
       }
 
       /*
@@ -113,13 +110,13 @@ static void program_3card_render_cards(struct program_context_t *context) {
        */
 
       if ((card->flags & CARD_LADY) == 0) {
-        blit.blit_width = 8;
-        blit.blit_height = 8;
-        blit.source_x = 96;
-        blit.source_y = 112;
-        blit.target_x = card->x + 4;
-        blit.target_y = card->y + 8;
-        framebuffer_blit(framebuffer, &blit);
+        framebuffer_rom_blit_data.blit_width = 8;
+        framebuffer_rom_blit_data.blit_height = 8;
+        framebuffer_rom_blit_data.source_x = 96;
+        framebuffer_rom_blit_data.source_y = 112;
+        framebuffer_rom_blit_data.target_x = card->x + 4;
+        framebuffer_rom_blit_data.target_y = card->y + 8;
+        framebuffer_blit(framebuffer, &framebuffer_rom_blit_data);
       }
     }
   }

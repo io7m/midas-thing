@@ -52,17 +52,14 @@ static void
 program_rain_render_thunder(struct ssd1306_t *const display,
                             struct framebuffer_t *const framebuffer) {
 
-  struct framebuffer_blit_t rain_thunder_blit;
-  rain_thunder_blit.blit_width = 16;
-  rain_thunder_blit.blit_height = 32;
-  rain_thunder_blit.source = rom;
-  rain_thunder_blit.source_flash = 1;
-  rain_thunder_blit.source_image_width = ROM_WIDTH;
-  rain_thunder_blit.source_image_height = ROM_HEIGHT;
-  rain_thunder_blit.source_x = 32;
-  rain_thunder_blit.source_y = 96;
-  rain_thunder_blit.target_x = rain_thunder_x;
-  rain_thunder_blit.target_y = 16;
+  framebuffer_rom_blit_data.blit_width = 16;
+  framebuffer_rom_blit_data.blit_height = 32;
+  framebuffer_rom_blit_data.source_image_width = ROM_WIDTH;
+  framebuffer_rom_blit_data.source_image_height = ROM_HEIGHT;
+  framebuffer_rom_blit_data.source_x = 32;
+  framebuffer_rom_blit_data.source_y = 96;
+  framebuffer_rom_blit_data.target_x = rain_thunder_x;
+  framebuffer_rom_blit_data.target_y = 16;
 
   switch (rain_thunder) {
   case RAIN_THUNDER_IDLE: {
@@ -73,22 +70,22 @@ program_rain_render_thunder(struct ssd1306_t *const display,
   }
   case RAIN_THUNDER_START: {
     rain_thunder_x = rom_random_8() & (FRAMEBUFFER_WIDTH - 1);
-    rain_thunder_blit.target_x = rain_thunder_x;
+    framebuffer_rom_blit_data.target_x = rain_thunder_x;
     rain_thunder = RAIN_THUNDER_FLASH1;
     ssd1306_set_invert_on(display);
-    framebuffer_blit(framebuffer, &rain_thunder_blit);
+    framebuffer_blit(framebuffer, &framebuffer_rom_blit_data);
     break;
   }
   case RAIN_THUNDER_FLASH1: {
     rain_thunder = RAIN_THUNDER_PAUSE1;
     ssd1306_set_invert_off(display);
-    framebuffer_blit(framebuffer, &rain_thunder_blit);
+    framebuffer_blit(framebuffer, &framebuffer_rom_blit_data);
     break;
   }
   case RAIN_THUNDER_PAUSE1: {
     rain_thunder = RAIN_THUNDER_FLASH2;
     ssd1306_set_invert_on(display);
-    framebuffer_blit(framebuffer, &rain_thunder_blit);
+    framebuffer_blit(framebuffer, &framebuffer_rom_blit_data);
     break;
   }
   case RAIN_THUNDER_FLASH2: {

@@ -1,8 +1,22 @@
 #ifndef FRAMEBUFFER_BLIT_C
 #define FRAMEBUFFER_BLIT_C
 
-#include "framebuffer.h"
 #include <avr/pgmspace.h>
+
+#include "framebuffer.h"
+#include "rom.h"
+
+struct framebuffer_blit_t framebuffer_rom_blit_data = {
+    .blit_height = 0,
+    .blit_width = 0,
+    .source = rom,
+    .source_flash = 1,
+    .source_image_width = ROM_WIDTH,
+    .source_image_height = ROM_HEIGHT,
+    .source_x = 0,
+    .source_y = 0,
+    .target_x = 0,
+    .target_y = 0};
 
 static void framebuffer_blit_sram(struct framebuffer_t *const f,
                                   const struct framebuffer_blit_t *const blit) {

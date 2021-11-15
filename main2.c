@@ -116,18 +116,15 @@ static void main_init_display(void) {
  */
 
 static void main_title(void) {
-  struct framebuffer_blit_t blit;
-  blit.source = rom;
-  blit.source_flash = 1;
-  blit.source_image_width = ROM_WIDTH;
-  blit.source_image_height = ROM_HEIGHT;
-  blit.source_x = 0;
-  blit.source_y = 96;
-  blit.target_x = 48;
-  blit.target_y = 8;
-  blit.blit_width = 32;
-  blit.blit_height = 32;
-  framebuffer_blit(&framebuffer, &blit);
+  framebuffer_rom_blit_data.source_image_width = ROM_WIDTH;
+  framebuffer_rom_blit_data.source_image_height = ROM_HEIGHT;
+  framebuffer_rom_blit_data.source_x = 0;
+  framebuffer_rom_blit_data.source_y = 96;
+  framebuffer_rom_blit_data.target_x = 48;
+  framebuffer_rom_blit_data.target_y = 8;
+  framebuffer_rom_blit_data.blit_width = 32;
+  framebuffer_rom_blit_data.blit_height = 32;
+  framebuffer_blit(&framebuffer, &framebuffer_rom_blit_data);
 
   framebuffer_render_text_P(&framebuffer, PSTR("IO7M"), 48, 44);
   PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));

@@ -5,21 +5,30 @@
 #include "rom.h"
 #include <avr/pgmspace.h>
 
+struct framebuffer_blit_t framebuffer_rom_blit_text = {
+    .blit_height = 0,
+    .blit_width = 0,
+    .source = rom,
+    .source_flash = 1,
+    .source_image_width = ROM_WIDTH,
+    .source_image_height = ROM_HEIGHT,
+    .source_x = 0,
+    .source_y = 0,
+    .target_x = 0,
+    .target_y = 0};
+
 void framebuffer_render_text_P(struct framebuffer_t *const f, const char *text,
                                uint8_t x, uint8_t y) {
   struct rom_character_t rom_char;
-  struct framebuffer_blit_t blit;
 
-  blit.source = rom;
-  blit.source_flash = 1;
-  blit.source_image_width = ROM_WIDTH;
-  blit.source_image_height = ROM_HEIGHT;
-  blit.blit_width = 8;
-  blit.blit_height = 8;
-  blit.source_x = 0;
-  blit.source_y = 0;
-  blit.target_x = x;
-  blit.target_y = y;
+  framebuffer_rom_blit_text.source_image_width = ROM_WIDTH;
+  framebuffer_rom_blit_text.source_image_height = ROM_HEIGHT;
+  framebuffer_rom_blit_text.blit_width = 8;
+  framebuffer_rom_blit_text.blit_height = 8;
+  framebuffer_rom_blit_text.source_x = 0;
+  framebuffer_rom_blit_text.source_y = 0;
+  framebuffer_rom_blit_text.target_x = x;
+  framebuffer_rom_blit_text.target_y = y;
 
   const char *ptr = text;
   uint8_t x_now = x;
@@ -31,11 +40,10 @@ void framebuffer_render_text_P(struct framebuffer_t *const f, const char *text,
     }
 
     rom_character_for(&rom_char, ch);
-    blit.source_x = rom_char.source_x;
-    blit.source_y = rom_char.source_y;
-    blit.target_x = x_now;
-
-    framebuffer_blit(f, &blit);
+    framebuffer_rom_blit_text.source_x = rom_char.source_x;
+    framebuffer_rom_blit_text.source_y = rom_char.source_y;
+    framebuffer_rom_blit_text.target_x = x_now;
+    framebuffer_blit(f, &framebuffer_rom_blit_text);
     x_now += 8;
     ++ptr;
   }
@@ -44,18 +52,14 @@ void framebuffer_render_text_P(struct framebuffer_t *const f, const char *text,
 void framebuffer_render_text(struct framebuffer_t *const f, const char *text,
                              uint8_t x, uint8_t y) {
   struct rom_character_t rom_char;
-  struct framebuffer_blit_t blit;
-
-  blit.source = rom;
-  blit.source_flash = 1;
-  blit.source_image_width = ROM_WIDTH;
-  blit.source_image_height = ROM_HEIGHT;
-  blit.blit_width = 8;
-  blit.blit_height = 8;
-  blit.source_x = 0;
-  blit.source_y = 0;
-  blit.target_x = x;
-  blit.target_y = y;
+  framebuffer_rom_blit_text.source_image_width = ROM_WIDTH;
+  framebuffer_rom_blit_text.source_image_height = ROM_HEIGHT;
+  framebuffer_rom_blit_text.blit_width = 8;
+  framebuffer_rom_blit_text.blit_height = 8;
+  framebuffer_rom_blit_text.source_x = 0;
+  framebuffer_rom_blit_text.source_y = 0;
+  framebuffer_rom_blit_text.target_x = x;
+  framebuffer_rom_blit_text.target_y = y;
 
   const char *ptr = text;
   uint8_t x_now = x;
@@ -67,11 +71,10 @@ void framebuffer_render_text(struct framebuffer_t *const f, const char *text,
     }
 
     rom_character_for(&rom_char, ch);
-    blit.source_x = rom_char.source_x;
-    blit.source_y = rom_char.source_y;
-    blit.target_x = x_now;
-
-    framebuffer_blit(f, &blit);
+    framebuffer_rom_blit_text.source_x = rom_char.source_x;
+    framebuffer_rom_blit_text.source_y = rom_char.source_y;
+    framebuffer_rom_blit_text.target_x = x_now;
+    framebuffer_blit(f, &framebuffer_rom_blit_text);
     x_now += 8;
     ++ptr;
   }

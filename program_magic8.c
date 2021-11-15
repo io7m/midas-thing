@@ -61,18 +61,15 @@ static program_sleep_t program_magic8_run(struct program_context_t *context) {
   case MAGIC8_ROLLING: {
     --program_magic8_timer;
 
-    struct framebuffer_blit_t blit;
-    blit.blit_width = 32;
-    blit.blit_height = 32;
-    blit.source = rom;
-    blit.source_flash = 1;
-    blit.source_image_width = ROM_WIDTH;
-    blit.source_image_height = ROM_HEIGHT;
-    blit.source_x = 48;
-    blit.source_y = 96;
-    blit.target_x = 64 - (32 >> 1);
-    blit.target_y = 16 + (program_magic8_timer & 1);
-    framebuffer_blit(context->framebuffer, &blit);
+    framebuffer_rom_blit_data.blit_width = 32;
+    framebuffer_rom_blit_data.blit_height = 32;
+    framebuffer_rom_blit_data.source_image_width = ROM_WIDTH;
+    framebuffer_rom_blit_data.source_image_height = ROM_HEIGHT;
+    framebuffer_rom_blit_data.source_x = 48;
+    framebuffer_rom_blit_data.source_y = 96;
+    framebuffer_rom_blit_data.target_x = 64 - (32 >> 1);
+    framebuffer_rom_blit_data.target_y = 16 + (program_magic8_timer & 1);
+    framebuffer_blit(context->framebuffer, &framebuffer_rom_blit_data);
 
     if (program_magic8_timer == 0) {
       const uint8_t index = rom_random_8() % program_magic8_responses_count;

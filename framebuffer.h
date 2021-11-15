@@ -44,6 +44,8 @@ _Static_assert(sizeof(struct framebuffer_blit_t) == 11,
 void framebuffer_blit(struct framebuffer_t *const f,
                       const struct framebuffer_blit_t *const blit);
 
+extern struct framebuffer_blit_t framebuffer_rom_blit_data;
+
 void framebuffer_render_text_P(struct framebuffer_t *const f, const char *text,
                                uint8_t x, uint8_t y);
 void framebuffer_render_text(struct framebuffer_t *const f, const char *text,
