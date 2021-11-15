@@ -1,0 +1,25 @@
+
+#!/bin/sh
+
+fatal()
+{
+  echo "fatal: $1" 1>&2
+  exit 1
+}
+
+if [ $# -ne 2 ]
+then
+  fatal "usage: output.o file.c"
+fi
+
+CONF_OUTPUT="$1"
+shift
+CONF_SOURCE="$1"
+shift
+
+CONF_AS=$(head -n 1 conf-as-compile) || fatal "could not read conf-as-compile"
+CONF_ASFLAGS=$(egrep -v '^#' conf-as-flags) || fatal "could not read conf-as-flags"
+
+mkdir -p $(dirname "${CONF_OUTPUT}") || fatal "could not create output directory"
+
+exec ${CONF_AS} -c ${CONF_ASFLAGS} -o "${CONF_OUTPUT}" "${CONF_SOURCE}"
