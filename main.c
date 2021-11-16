@@ -1,227 +1,324 @@
-#ifndef MAIN_C
-#define MAIN_C
+#ifndef MAIN2_C
+#define MAIN2_C
 
+#include <avr/interrupt.h>
 #include <avr/io.h>
 #include <avr/pgmspace.h>
+#include <avr/sleep.h>
 #include <util/delay.h>
 #include <util/twi.h>
 
 #include <stdint.h>
+#include <stdlib.h>
 
+#include "adc.h"
+#include "buttons.h"
 #include "format.h"
+#include "framebuffer.h"
 #include "i2c.h"
+#include "program_3card.h"
+#include "program_magic8.h"
+#include "program_noise.h"
+#include "program_rain.h"
+#include "program_stats.h"
+#include "rom.h"
+#include "sizes.h"
+#include "ssd1306.h"
+#include "transitions.h"
 #include "uart.h"
-
-void i2c_error(PGM_P name, uint8_t command, uint8_t status) {
-  char buffer[8] = {0};
-
-  uart_puts_P(PSTR("i2c_error: "));
-  uart_puts_P(name);
-  uart_puts_P(PSTR(" command 0x"));
-
-  buffer[formatU8X(buffer, command)] = 0;
-  uart_puts(buffer);
-
-  uart_puts_P(PSTR(" status 0x"));
-
-  buffer[formatU8X(buffer, status)] = 0;
-  uart_puts(buffer);
-
-  uart_puts_P(PSTR("\n"));
-}
-
-void i2c_crash(PGM_P name, uint8_t command, uint8_t status) {
-  i2c_error(name, command, status);
-
-  DDRB = 0b11111111;
-  for (;;) {
-    PORTB = 0b00000000;
-    _delay_ms(100);
-    PORTB = 0b11111111;
-    _delay_ms(100);
-  }
-}
 
 #define MIDAS_ADDRESS 0x3C
 
-#define SSD1306_SET_CONTRAST 0x81
-#define SSD1306_DISPLAYALLON_RESUME 0xA4
-#define SSD1306_DISPLAYALLON 0xA5
-#define SSD1306_SET_DISPLAY_NORMAL 0xA6
-#define SSD1306_SET_DISPLAY_INVERT 0xA7
-#define SSD1306_DISPLAY_OFF 0xAE
-#define SSD1306_DISPLAY_ON 0xAF
-#define SSD1306_SET_DISPLAY_OFFSET 0xD3
-#define SSD1306_SET_COM_PINS_CONFIGURATION 0xDA
-#define SSD1306_SET_VCOM_DESELECT 0xDB
-#define SSD1306_SET_DISPLAY_CLOCK_DIVIDER 0xD5
-#define SSD1306_SET_PRECHARGE_PERIOD 0xD9
-#define SSD1306_SET_MULTIPLEX_RATIO 0xA8
-#define SSD1306_SET_HIGH_COLUMN 0x10
-#define SSD1306_SET_START_LINE_0 0x40
-#define SSD1306_SET_COLUMN_ADDRESS 0x21
-#define SSD1306_SET_PAGE_ADDRESS 0x22
-#define SSD1306_SET_COM_OUTPUT_SCAN_INCREMENT 0xC0
-#define SSD1306_SET_COM_OUTPUT_SCAN_DECREMENT 0xC8
-#define SSD1306_SET_SEGMENT_REMAP_0 0xA0
-#define SSD1306_SET_SEGMENT_REMAP_1 0xA1
+static struct ssd1306_t ssd1306;
+static struct framebuffer_t framebuffer;
+static struct buttons_t buttons;
 
-#define SSD1306_SET_COLUMN_ADDRESS_LOW_4B_0 0x00
-#define SSD1306_SET_COLUMN_ADDRESS_HIGH_4B_0 0x10
+static struct program_context_t program_context = {
+    .buttons = &buttons, .display = &ssd1306, .framebuffer = &framebuffer};
 
-typedef enum {
-  SSD1306_SET_PAGE_START_ADDRESS_0 = 0xB0,
-  SSD1306_SET_PAGE_START_ADDRESS_1 = 0xB1,
-  SSD1306_SET_PAGE_START_ADDRESS_2 = 0xB2,
-  SSD1306_SET_PAGE_START_ADDRESS_3 = 0xB3,
-  SSD1306_SET_PAGE_START_ADDRESS_4 = 0xB4,
-  SSD1306_SET_PAGE_START_ADDRESS_5 = 0xB5,
-  SSD1306_SET_PAGE_START_ADDRESS_6 = 0xB6,
-  SSD1306_SET_PAGE_START_ADDRESS_7 = 0xB7
-} ssd1306_set_page_start_address_t;
+static const struct program_t *const programs[] = {
+    &program_3card, &program_magic8, &program_noise, &program_rain,
+    &program_stats};
 
-#define SSD1306_SET_MEMORY_ADDRESSING_MODE 0x20
+static const uint8_t program_count =
+    sizeof(programs) / sizeof(struct program_t *);
 
-typedef enum {
-  SSD1306_MEMORY_ADDRESSING_MODE_PAGE = 0b00000010,
-  SSD1306_MEMORY_ADDRESSING_MODE_HORIZONTAL = 0b00000000,
-  SSD1306_MEMORY_ADDRESSING_MODE_VERTICAL = 0b00000001
-} ssd1306_memory_addressing_mode_t;
+static const struct program_t *program_running;
+static const char program_cursor[] PROGMEM = ">";
 
-#define SSD1306_SET_CHARGE_PUMP 0x8D
-#define SSD1306_SET_CHARGE_PUMP_ENABLE 0x14
-#define SSD1306_SET_CHARGE_PUMP_DISABLE 0x10
+#ifdef PANIC_DEBUG
+static void panic_if(uint8_t i, const char *message) {
+  if (i == 0) {
+    char format_buffer[FORMAT_U16_SIZE_BASE2];
+    uart_putchar('E');
+    uart_putchar(' ');
+    uart_puts_P(message);
+    uart_putchar(' ');
+    buffer[formatU8X(format_buffer, ssd1306.i2c.status)] = 0;
+    uart_puts(format_buffer);
+    uart_putchar('\n');
 
-#define SSD1306_EXTERNALVCC 0x1
-#define SSD1306_SWITCHCAPVCC 0x2
-
-static struct i2c_t i2c;
-
-void ssd1306_command(uint8_t data) {
-  if (!i2c_start(&i2c, MIDAS_ADDRESS)) {
-    i2c_crash(PSTR("i2c_start"), data, i2c.status);
-  }
-  if (!i2c_write(&i2c, 0x0)) {
-    i2c_crash(PSTR("i2c_write_0"), data, i2c.status);
-  }
-  if (!i2c_write(&i2c, data)) {
-    i2c_crash(PSTR("i2c_write_command"), data, i2c.status);
-  }
-
-  i2c_stop(&i2c);
-}
-
-void ssd1306_clear(uint8_t value) {
-  for (uint8_t z = 0; z < 8; ++z) {
-    for (uint8_t y = 0; y < 8; ++y) {
-      if (!i2c_start(&i2c, MIDAS_ADDRESS)) {
-        i2c_crash(PSTR("i2c_start"), MIDAS_ADDRESS, i2c.status);
-      }
-      if (!i2c_write(&i2c, 0x40)) {
-        i2c_crash(PSTR("i2c_write_0"), 0x40, i2c.status);
-      }
-      for (uint8_t x = 0; x < 16; ++x) {
-        if (!i2c_write(&i2c, value)) {
-          i2c_crash(PSTR("i2c_write_0"), value, i2c.status);
-        }
-      }
-      i2c_stop(&i2c);
+    for (;;) {
     }
   }
 }
 
-int main(void) {
-  uart_init();
-  // uart_puts_P(PSTR("i: init\n"));
+#define PANIC_STRINGIFY(x) #x
+#define PANIC_TOSTRING(x) PANIC_STRINGIFY(x)
+#define PANIC_ON_FAILURE(e) (panic_if((e), PSTR(PANIC_TOSTRING(__LINE__))))
+#else
+#define PANIC_ON_FAILURE(e) (e)
+#endif
+
+/*
+ * Initialize the display.
+ */
+
+static void main_init_display(void) {
 
   /*
-   * Enable pull-up resistors on port D (the pins attached to the i2c bus).
+   * Configure PORTC as an input port.
+   * Enable pull-up resistors on the i2c bus pins.
    */
 
-  DDRD = 0b00000000;
-  PORTD = 0b11111111;
+  DDRC = 0b00000000;
+  PORTC = 0b00110000;
 
-  i2c_init(&i2c);
+  ssd1306_init(&ssd1306, MIDAS_ADDRESS);
+  framebuffer_init(&framebuffer);
 
-  ssd1306_command(SSD1306_DISPLAY_OFF);
+  PANIC_ON_FAILURE(ssd1306_display_off(&ssd1306));
+  PANIC_ON_FAILURE(ssd1306_set_clock_divider(&ssd1306, 0x80));
+  PANIC_ON_FAILURE(ssd1306_set_multiplex_ratio(&ssd1306, 63));
+  PANIC_ON_FAILURE(ssd1306_set_display_offset(&ssd1306, 0x00));
+  PANIC_ON_FAILURE(ssd1306_set_display_start_line(&ssd1306, 0x00));
+  PANIC_ON_FAILURE(
+      ssd1306_set_charge_pump(&ssd1306, SSD1306_SET_CHARGE_PUMP_ENABLE));
+  PANIC_ON_FAILURE(
+      ssd1306_set_segment_remap(&ssd1306, SSD1306_SEGMENT_REMAP_1));
+  PANIC_ON_FAILURE(ssd1306_set_com_output_scan(
+      &ssd1306, SSD1306_SET_COM_OUTPUT_SCAN_DECREMENT));
+  PANIC_ON_FAILURE(ssd1306_set_com_pins_configuration(&ssd1306, 0x12));
+  PANIC_ON_FAILURE(ssd1306_set_contrast(&ssd1306, 0xff));
+  PANIC_ON_FAILURE(ssd1306_set_precharge_period(&ssd1306, 0x22));
+  PANIC_ON_FAILURE(ssd1306_set_vcom_deselect(&ssd1306, 0x40));
+  PANIC_ON_FAILURE(ssd1306_display_all_on_resume(&ssd1306));
+  PANIC_ON_FAILURE(ssd1306_set_invert_off(&ssd1306));
+  PANIC_ON_FAILURE(ssd1306_display_on(&ssd1306));
 
-  ssd1306_command(SSD1306_SET_DISPLAY_CLOCK_DIVIDER);
-  ssd1306_command(0x80);
+  PANIC_ON_FAILURE(ssd1306_set_memory_addressing_mode(
+      &ssd1306, SSD1306_MEMORY_ADDRESSING_MODE_HORIZONTAL));
+  PANIC_ON_FAILURE(ssd1306_set_column_address(&ssd1306, 0x0, 0x7f));
+  PANIC_ON_FAILURE(ssd1306_set_page_address(&ssd1306, 0x0, 0x7));
 
-  ssd1306_command(SSD1306_SET_MULTIPLEX_RATIO);
-  ssd1306_command(63);
+  PANIC_ON_FAILURE(ssd1306_clear(&ssd1306, 0));
+  PANIC_ON_FAILURE(ssd1306_set_contrast(&ssd1306, 0));
 
-  ssd1306_command(SSD1306_SET_DISPLAY_OFFSET);
-  ssd1306_command(0x00);
+  PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
+}
 
-  ssd1306_command(SSD1306_SET_START_LINE_0);
+/*
+ * Display the title.
+ */
 
-  ssd1306_command(SSD1306_SET_CHARGE_PUMP);
-  ssd1306_command(SSD1306_SET_CHARGE_PUMP_ENABLE);
+static void main_title(void) {
+  framebuffer_rom_blit_data.source_x = 0;
+  framebuffer_rom_blit_data.source_y = 96;
+  framebuffer_rom_blit_data.target_x = 48;
+  framebuffer_rom_blit_data.target_y = 8;
+  framebuffer_rom_blit_data.blit_width = 32;
+  framebuffer_rom_blit_data.blit_height = 32;
+  framebuffer_blit(&framebuffer, &framebuffer_rom_blit_data);
 
-  ssd1306_command(SSD1306_SET_SEGMENT_REMAP_1);
+  framebuffer_render_text_P(&framebuffer, PSTR("IO7M"), 48, 44);
+  PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
 
-  ssd1306_command(SSD1306_SET_COM_OUTPUT_SCAN_INCREMENT);
+  _delay_ms(1000);
+  transition_vbars(&ssd1306, &framebuffer);
 
-  ssd1306_command(SSD1306_SET_COM_PINS_CONFIGURATION);
-  ssd1306_command(0x12);
+  framebuffer_init(&framebuffer);
+  PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
+}
 
-  ssd1306_command(SSD1306_SET_CONTRAST);
-  ssd1306_command(0xff);
+/*
+ * Configure the button inputs and interrupts.
+ */
 
-  ssd1306_command(SSD1306_SET_PRECHARGE_PERIOD);
-  ssd1306_command(0xF1);
+static void main_init_buttons(void) {
+  /*
+   * Set the four button pins as inputs, and enable pull-up
+   * resistors on the button pins.
+   */
 
-  ssd1306_command(SSD1306_SET_VCOM_DESELECT);
-  ssd1306_command(0x40);
+  DDRD &= ~(0b00111100);
+  PORTD |= 0b00111100;
 
-  ssd1306_command(SSD1306_DISPLAYALLON_RESUME);
-  ssd1306_command(SSD1306_SET_DISPLAY_NORMAL);
-  ssd1306_command(SSD1306_DISPLAY_ON);
+  /*
+   * Enable interrupts for PORTD.
+   */
 
-  ssd1306_command(SSD1306_SET_MEMORY_ADDRESSING_MODE);
-  ssd1306_command(SSD1306_MEMORY_ADDRESSING_MODE_HORIZONTAL);
+  PCICR = (1 << PCIE2);
+  PCMSK2 = 0;
+  PCMSK2 |= (1 << PCINT18);
+  PCMSK2 |= (1 << PCINT19);
+  PCMSK2 |= (1 << PCINT20);
+  PCMSK2 |= (1 << PCINT21);
+  sei();
+}
 
-  ssd1306_command(SSD1306_SET_COLUMN_ADDRESS);
-  ssd1306_command(0x0);
-  ssd1306_command(0x7f);
+static void main_read_buttons(void) {
+  const uint8_t pins_now = ~(PIND & 0b00111100) >> 2;
+  const uint8_t buttons_then = buttons.buttons;
 
-  ssd1306_command(SSD1306_SET_PAGE_ADDRESS);
-  ssd1306_command(0x0);
-  ssd1306_command(0x7);
+  if ((pins_now & BUTTON_0) == BUTTON_0) {
+    buttons.buttons |= BUTTON_0;
+  } else {
+    buttons.buttons &= ~BUTTON_0;
+  }
 
-  // uart_puts_P(PSTR("i: finished init\n"));
+  if ((pins_now & BUTTON_1) == BUTTON_1) {
+    buttons.buttons |= BUTTON_1;
+  } else {
+    buttons.buttons &= ~BUTTON_1;
+  }
 
-  // ssd1306_clear(0xff);
+  if ((pins_now & BUTTON_2) == BUTTON_2) {
+    buttons.buttons |= BUTTON_2;
+  } else {
+    buttons.buttons &= ~BUTTON_2;
+  }
 
-  ssd1306_command(SSD1306_SET_MEMORY_ADDRESSING_MODE);
-  ssd1306_command(SSD1306_MEMORY_ADDRESSING_MODE_PAGE);
+  if ((pins_now & BUTTON_3) == BUTTON_3) {
+    buttons.buttons |= BUTTON_3;
+  } else {
+    buttons.buttons &= ~BUTTON_3;
+  }
 
-  ssd1306_command(SSD1306_SET_PAGE_START_ADDRESS_1);
-  ssd1306_command(SSD1306_SET_COLUMN_ADDRESS_LOW_4B_0);
-  ssd1306_command(SSD1306_SET_COLUMN_ADDRESS_HIGH_4B_0);
+  button_set_changed(&buttons, buttons.buttons != buttons_then);
+}
 
-  i2c_start(&i2c, MIDAS_ADDRESS);
-  i2c_write(&i2c, 0x40);
-  i2c_write(&i2c, 0x0);
-  i2c_write(&i2c, 0x0);
-  i2c_write(&i2c, 0x0);
-  i2c_write(&i2c, 0x0);
-  i2c_write(&i2c, 0x0);
-  i2c_write(&i2c, 0x0);
-  i2c_write(&i2c, 0x0);
-  i2c_write(&i2c, 0x0);
-  i2c_stop(&i2c);
+/*
+ * The interrupt vector for buttons.
+ */
 
-  DDRB = 0b11111111;
+ISR(PCINT2_vect) { random(); }
+
+static uint8_t main_menu_selection = 0;
+
+static void main_menu(void) {
+  main_read_buttons();
+
+  /*
+   * Handle button menu selections.
+   */
+
+  if (buttons_changed(&buttons)) {
+    if (button_0_set(&buttons)) {
+      if (main_menu_selection == 0) {
+        main_menu_selection = program_count - 1;
+      } else {
+        main_menu_selection = main_menu_selection - 1;
+      }
+    } else if (button_2_set(&buttons)) {
+      if (main_menu_selection == program_count - 1) {
+        main_menu_selection = 0;
+      } else {
+        main_menu_selection = main_menu_selection + 1;
+      }
+    } else if (button_1_set(&buttons)) {
+      program_running = programs[main_menu_selection];
+      program_running->init(&program_context);
+      return;
+    }
+  }
+
+  /*
+   * Render the menu.
+   */
+
+  framebuffer_init(&framebuffer);
+
+  uint8_t y = 8;
+  for (uint8_t index = 0; index < program_count; ++index) {
+    const struct program_t *const program = programs[index];
+    if (index == main_menu_selection) {
+      framebuffer_render_text_P(&framebuffer, program_cursor, 8, y);
+    }
+    framebuffer_render_text_P(&framebuffer, program->name(), 24, y);
+    y += 8;
+  }
+
+  PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
+  ssd1306_set_invert_off(&ssd1306);
+
+  /*
+   * Go to sleep until there's an interrupt.
+   */
+
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  sleep_mode();
+}
+
+int main(void) {
+  uart_init();
+
+  {
+    char format[FORMAT_U16_SIZE_BASE10];
+    uart_puts_P(PSTR("i: booting\n"));
+    format[formatU16D(format, size_stack())] = 0;
+    uart_puts_P(PSTR("i: stack "));
+    uart_puts(format);
+    uart_puts_P(PSTR("\n"));
+  }
+
+  adc_init();
+  main_init_display();
+  main_title();
+  main_init_buttons();
+
+  uart_puts_P(PSTR("i: boot finished\n"));
+
   for (;;) {
-    PORTB = 0b00000000;
-    _delay_ms(1000);
-    PORTB = 0b11111111;
-    _delay_ms(1000);
+    if (!program_running) {
+      main_menu();
+      continue;
+    }
+
+    /*
+     * Check to see if the "menu" button has been pressed, and stop
+     * the program running if so.
+     */
+
+    main_read_buttons();
+    if (buttons_changed(&buttons)) {
+      if (button_3_set(&buttons)) {
+        program_running = 0;
+        continue;
+      }
+    }
+
+    const program_sleep_t want_sleep = program_running->run(&program_context);
+    PANIC_ON_FAILURE(framebuffer_send(&ssd1306, &framebuffer));
+
+    /*
+     * Go to sleep if the program requests it, or just pause for a bit
+     * for a consistent frame rate.
+     */
+
+    switch (want_sleep) {
+    case PROGRAM_NO_SLEEP: {
+      _delay_ms(16);
+      break;
+    }
+    case PROGRAM_SLEEP: {
+      set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+      sleep_mode();
+      break;
+    }
+    }
   }
 
   return 0;
 }
 
-#endif // MAIN_C
+#endif // MAIN2_C

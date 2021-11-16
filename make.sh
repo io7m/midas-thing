@@ -3,12 +3,10 @@
 mkdir -p build
 
 FILES="
-sizes.h
-all.c
 adc.c
 adc.h
-buttons.h
 buttons.c
+buttons.h
 format.c
 format.h
 framebuffer.h
@@ -25,20 +23,20 @@ i2c_start.c
 i2c_stop.c
 i2c_write.c
 main.c
-main2.c
 program.h
-program_rain.c
-program_rain.h
-program_stats.c
-program_stats.h
+program_3card.c
+program_3card.h
 program_magic8.c
 program_magic8.h
 program_noise.c
 program_noise.h
-program_3card.h
-program_3card.c
+program_rain.c
+program_rain.h
+program_stats.c
+program_stats.h
 rom.c
 rom.h
+sizes.h
 ssd1306.h
 ssd1306_clear.c
 ssd1306_data.c
@@ -92,7 +90,6 @@ done
 ./c-compile build/program_3card.o program_3card.c
 ./c-compile build/program_noise.o program_noise.c
 ./c-compile build/adc.o adc.c
-./c-compile build/all.o all.c
 ./c-compile build/format.o format.c
 ./c-compile build/i2c_init.o i2c_init.c
 ./c-compile build/i2c_reset.o i2c_reset.c
@@ -108,7 +105,7 @@ done
 ./c-compile build/framebuffer_set.o framebuffer_set.c
 ./c-compile build/framebuffer_vline.o framebuffer_vline.c
 ./c-compile build/main.o main.c
-./c-compile build/main2.o main2.c
+./c-compile build/main.o main.c
 ./c-compile build/transition_vbar.o transition_vbar.c
 ./c-compile build/ssd1306_clear.o ssd1306_clear.c
 ./c-compile build/ssd1306_display_all_on.o ssd1306_display_all_on.c
@@ -212,10 +209,8 @@ build/ssd1306_set_segment_remap.o \
 build/ssd1306_set_vcom_deselect.o
 ranlib build/ssd1306.a
 
-./c-link build/all build/all.o
-./c-link build/main build/main.o build/format.o build/ssd1306.a build/i2c.a build/uart.a
-./c-link build/main2 \
-build/main2.o \
+./c-link build/main \
+build/main.o \
 build/format.o \
 build/program.a \
 build/transitions.a \
@@ -230,6 +225,3 @@ build/sizes.o \
 build/version.o
 
 ./hex build/main.hex build/main
-./hex build/main2.hex build/main2
-./hex build/all.hex build/all
-
