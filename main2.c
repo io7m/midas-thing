@@ -22,6 +22,7 @@
 #include "program_rain.h"
 #include "program_stats.h"
 #include "rom.h"
+#include "sizes.h"
 #include "ssd1306.h"
 #include "transitions.h"
 #include "uart.h"
@@ -260,11 +261,22 @@ static void main_menu(void) {
 
 int main(void) {
   uart_init();
-  adc_init();
 
+  {
+    char format[FORMAT_U16_SIZE_BASE10];
+    uart_puts_P(PSTR("i: booting\n"));
+    format[formatU16D(format, size_stack())] = 0;
+    uart_puts_P(PSTR("i: stack "));
+    uart_puts(format);
+    uart_puts_P(PSTR("\n"));
+  }
+
+  adc_init();
   main_init_display();
   main_title();
   main_init_buttons();
+
+  uart_puts_P(PSTR("i: boot finished\n"));
 
   for (;;) {
     if (!program_running) {
